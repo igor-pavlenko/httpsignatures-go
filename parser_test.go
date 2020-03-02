@@ -3,6 +3,7 @@ package httpsignatures
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestCreate(t *testing.T) {
@@ -66,7 +67,7 @@ func TestParserParse(t *testing.T) {
 			},
 			want:       ParsedHeader{},
 			wantErr:    true,
-			wantErrMsg: "unexpected end of header, expected key param",
+			wantErrMsg: "unexpected end of header, expected parameter",
 		},
 		{
 			name: "Authorization: Wrong in keyword",
@@ -122,7 +123,7 @@ func TestParserParse(t *testing.T) {
 			},
 			want: ParsedHeader{
 				keyword: "Signature",
-				created: 1402170695,
+				created: time.Unix(1402170695, 0),
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -135,7 +136,7 @@ func TestParserParse(t *testing.T) {
 			},
 			want: ParsedHeader{
 				keyword: "Signature",
-				expires: 1402170699,
+				expires: time.Unix(1402170699, 0),
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -176,8 +177,8 @@ func TestParserParse(t *testing.T) {
 				keyword:   "Signature",
 				keyId:     "v1",
 				algorithm: "v2",
-				created:   1402170695,
-				expires:   1402170699,
+				created:   time.Unix(1402170695, 0),
+				expires:   time.Unix(1402170699, 0),
 				headers:   []string{"v-3", "v-4",},
 				signature: "v5",
 			},
@@ -194,8 +195,8 @@ func TestParserParse(t *testing.T) {
 				keyword:   "Signature",
 				keyId:     "v1",
 				algorithm: "v2",
-				created:   1402170695,
-				expires:   1402170699,
+				created:   time.Unix(1402170695, 0),
+				expires:   time.Unix(1402170699, 0),
 				headers:   []string{"v-3", "v-4",},
 				signature: "v5",
 			},
@@ -211,8 +212,8 @@ func TestParserParse(t *testing.T) {
 			want: ParsedHeader{
 				keyId:     "v1",
 				algorithm: "v2",
-				created:   1402170695,
-				expires:   1402170699,
+				created:   time.Unix(1402170695, 0),
+				expires:   time.Unix(1402170699, 0),
 				headers:   []string{"v-3", "v-4",},
 				signature: "v5",
 			},
@@ -228,8 +229,8 @@ func TestParserParse(t *testing.T) {
 			want: ParsedHeader{
 				keyId:     "Test",
 				algorithm: "rsa-sha256",
-				created:   1402170695,
-				expires:   1402170699,
+				created:   time.Unix(1402170695, 0),
+				expires:   time.Unix(1402170699, 0),
 				headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "content-type", "digest", "content-length",},
 				signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
 			},
@@ -264,13 +265,13 @@ func TestParserParse(t *testing.T) {
 			wantErrMsg: "found ''' — unsupported symbol, expected '\"' or space symbol",
 		},
 		{
-			name: "Unknown key",
+			name: "Unknown parameter",
 			args: args{
 				header: `key="v1"`,
 			},
 			want:       ParsedHeader{},
 			wantErr:    true,
-			wantErrMsg: "unknown key: 'key'",
+			wantErrMsg: "unknown parameter: 'key'",
 		},
 		{
 			name: "unexpected end of header, expected equal symbol",
@@ -336,6 +337,24 @@ func TestParserParse(t *testing.T) {
 			wantErrMsg: "wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775807\": value out of range",
 		},
 		{
+			name: "Wrong created INT value with space at the end",
+			args: args{
+				header: `created=9223372036854775807 `,
+			},
+			want:       ParsedHeader{},
+			wantErr:    true,
+			wantErrMsg: "wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775807\": value out of range",
+		},
+		{
+			name: "Wrong created INT value with divider",
+			args: args{
+				header: `created=9223372036854775807,`,
+			},
+			want:       ParsedHeader{},
+			wantErr:    true,
+			wantErrMsg: "wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775807\": value out of range",
+		},
+		{
 			name: "Wrong expires INT value",
 			args: args{
 				header: `expires=9223372036854775807`,
@@ -367,9 +386,9 @@ func TestParserParse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := Create()
 			if tt.args.authorization == true {
-				p.keywordNow = true
+				p.flag = "keyword"
 			} else {
-				p.keyNow = true
+				p.flag = "param"
 			}
 			got, err := p.parse(tt.args.header)
 			if err != nil && err.Error() != tt.wantErrMsg {
@@ -405,8 +424,8 @@ func TestParserParseAuthorization(t *testing.T) {
 				keyword:   "Signature",
 				keyId:     "Test",
 				algorithm: "rsa-sha256",
-				created:   1402170695,
-				expires:   1402170699,
+				created:   time.Unix(1402170695, 0),
+				expires:   time.Unix(1402170699, 0),
 				headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "content-type", "digest", "content-length",},
 				signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
 			},
@@ -450,8 +469,8 @@ func TestParserParseSignature(t *testing.T) {
 			want: ParsedHeader{
 				keyId:     "Test",
 				algorithm: "rsa-sha256",
-				created:   1402170695,
-				expires:   1402170699,
+				created:   time.Unix(1402170695, 0),
+				expires:   time.Unix(1402170699, 0),
 				headers:   []string{"(request-target)", "(created)", "(expires)",},
 				signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
 			},
@@ -492,7 +511,7 @@ func TestParserParseFailed(t *testing.T) {
 			args: args{
 				header: `keyId="Test"`,
 			},
-			want: ParsedHeader{},
+			want:       ParsedHeader{},
 			wantErr:    true,
 			wantErrMsg: "unexpected parser stage",
 		},

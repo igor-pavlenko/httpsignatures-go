@@ -5,6 +5,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ASCII codes
@@ -23,25 +24,19 @@ type ParsedHeader struct {
 	keyword   string
 	keyId     string
 	algorithm string
-	created   int32
-	expires   int32
+	created   time.Time
+	expires   time.Time // Not implemented: "Subsecod precision is allowed using decimal notation."
 	headers   []string
 	signature string
 }
 
 type parser struct {
-	header         string
-	result         ParsedHeader
-	keyword        []byte
-	key            []byte
-	value          []byte
-	keywordNow     bool
-	keyNow         bool
-	equalNow       bool
-	quoteNow       bool
-	stringValueNow bool
-	intValueNow    bool
-	divNow         bool
+	header  string
+	result  ParsedHeader
+	keyword []byte
+	key     []byte
+	value   []byte
+	flag    string
 }
 
 func Create() *parser {
@@ -50,12 +45,12 @@ func Create() *parser {
 }
 
 func (p *parser) ParseAuthorization(header string) (ParsedHeader, error) {
-	p.keywordNow = true
+	p.flag = "keyword"
 	return p.parse(header)
 }
 
 func (p *parser) ParseSignature(header string) (ParsedHeader, error) {
-	p.keyNow = true
+	p.flag = "param"
 	return p.parse(header)
 }
 
@@ -70,44 +65,60 @@ func (p *parser) parse(header string) (ParsedHeader, error) {
 		_, err := r.Read(b)
 		if err == io.EOF {
 			err = nil
-			if p.keywordNow == true {
+			switch p.flag {
+			case "keyword":
 				err = p.setKeyword()
-			} else if p.keyNow == true {
+				break
+			case "param":
 				if len(p.key) == 0 {
-					err = fmt.Errorf("unexpected end of header, expected key param")
+					err = fmt.Errorf("unexpected end of header, expected parameter")
 				} else {
 					err = fmt.Errorf("unexpected end of header, expected '=' symbol and field value")
 				}
-			} else if p.equalNow == true {
+				break
+			case "equal":
 				err = fmt.Errorf("unexpected end of header, expected field value")
-			} else if p.quoteNow == true {
+				break
+			case "quote":
 				err = fmt.Errorf("unexpected end of header, expected '\"' symbol and field value")
-			} else if p.stringValueNow == true {
+				break
+			case "stringValue":
 				err = fmt.Errorf("unexpected end of header, expected '\"' symbol")
-			} else if p.intValueNow == true {
+				break
+			case "intValue":
 				err = p.set()
+				break
 			}
 			if err != nil {
 				return ParsedHeader{}, err
 			}
 			break
 		}
+
 		cur := b[0]
-		if p.keywordNow == true {
+		switch p.flag {
+		case "keyword":
 			err = p.parseKeyword(cur)
-		} else if p.keyNow == true {
+			break
+		case "param":
 			err = p.parseKey(cur)
-		} else if p.equalNow {
+			break
+		case "equal":
 			err = p.parseEqual(cur)
-		} else if p.quoteNow {
+			break
+		case "quote":
 			err = p.parseQuote(cur)
-		} else if p.stringValueNow == true {
+			break
+		case "stringValue":
 			err = p.parseStringValue(cur)
-		} else if p.intValueNow == true {
+			break
+		case "intValue":
 			err = p.parseIntValue(cur)
-		} else if p.divNow {
+			break
+		case "div":
 			err = p.parseDiv(cur)
-		} else {
+			break
+		default:
 			err = fmt.Errorf("unexpected parser stage")
 		}
 		if err != nil {
@@ -122,8 +133,7 @@ func (p *parser) parseKeyword(cur byte) error {
 	if (cur >= fromA && cur <= toZ) || (cur >= froma && cur <= toz) {
 		p.keyword = append(p.keyword, cur)
 	} else if cur == space && len(p.keyword) > 0 {
-		p.keywordNow = false
-		p.keyNow = true
+		p.flag = "param"
 		if err := p.setKeyword(); err != nil {
 			return err
 		}
@@ -135,15 +145,14 @@ func (p *parser) parseKey(cur byte) error {
 	if (cur >= fromA && cur <= toZ) || (cur >= froma && cur <= toz) {
 		p.key = append(p.key, cur)
 	} else if cur == equal {
-		p.keyNow = false
-		if p.getValueType() == "string" {
-			p.quoteNow = true
-		} else {
-			p.intValueNow = true
+		t := p.getValueType()
+		if t == "string" {
+			p.flag = "quote"
+		} else if t == "int" {
+			p.flag = "intValue"
 		}
 	} else if cur == space && len(p.key) > 0 {
-		p.keyNow = false
-		p.equalNow = true
+		p.flag = "equal"
 	} else if cur != space {
 		return fmt.Errorf("found '%s' — unsupported symbol in key", string(cur))
 	}
@@ -152,11 +161,11 @@ func (p *parser) parseKey(cur byte) error {
 
 func (p *parser) parseEqual(cur byte) error {
 	if cur == equal {
-		p.equalNow = false
-		if p.getValueType() == "string" {
-			p.quoteNow = true
-		} else {
-			p.intValueNow = true
+		t := p.getValueType()
+		if t == "string" {
+			p.flag = "quote"
+		} else if t == "int" {
+			p.flag = "intValue"
 		}
 	} else if cur == space {
 		return nil
@@ -168,8 +177,7 @@ func (p *parser) parseEqual(cur byte) error {
 
 func (p *parser) parseQuote(cur byte) error {
 	if cur == quote {
-		p.quoteNow = false
-		p.stringValueNow = true
+		p.flag = "stringValue"
 	} else if cur == space {
 		return nil
 	} else {
@@ -182,8 +190,7 @@ func (p *parser) parseStringValue(cur byte) error {
 	if cur != quote {
 		p.value = append(p.value, cur)
 	} else if cur == quote {
-		p.stringValueNow = false
-		p.divNow = true
+		p.flag = "div"
 		if err := p.set(); err != nil {
 			return err
 		}
@@ -198,14 +205,12 @@ func (p *parser) parseIntValue(cur byte) error {
 		if len(p.value) == 0 {
 			return nil
 		}
-		p.intValueNow = false
-		p.divNow = true
+		p.flag = "div"
 		if err := p.set(); err != nil {
 			return err
 		}
 	} else if cur == div {
-		p.intValueNow = false
-		p.keyNow = true
+		p.flag = "param"
 		if err := p.set(); err != nil {
 			return err
 		}
@@ -215,8 +220,7 @@ func (p *parser) parseIntValue(cur byte) error {
 
 func (p *parser) parseDiv(cur byte) error {
 	if cur == div {
-		p.divNow = false
-		p.keyNow = true
+		p.flag = "param"
 	} else if cur == space {
 		return nil
 	} else {
@@ -257,20 +261,20 @@ func (p *parser) set() error {
 		p.result.signature = string(p.value)
 	} else if k == "created" {
 		var err error
-		var i int64
-		if i, err = strconv.ParseInt(string(p.value), 10, 32); err != nil {
+		var sec int64
+		if sec, err = strconv.ParseInt(string(p.value), 10, 32); err != nil {
 			return fmt.Errorf("wrong 'created' param value: %v", err)
 		}
-		p.result.created = int32(i)
+		p.result.created = time.Unix(sec, 0)
 	} else if k == "expires" {
 		var err error
-		var i int64
-		if i, err = strconv.ParseInt(string(p.value), 10, 32); err != nil {
+		var sec int64
+		if sec, err = strconv.ParseInt(string(p.value), 10, 32); err != nil {
 			return fmt.Errorf("wrong 'expires' param value: %v", err)
 		}
-		p.result.expires = int32(i)
+		p.result.expires = time.Unix(sec, 0)
 	} else {
-		return fmt.Errorf("unknown key: '%s'", k)
+		return fmt.Errorf("unknown parameter: '%s'", k)
 	}
 
 	p.key = nil
