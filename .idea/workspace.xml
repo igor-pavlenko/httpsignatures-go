@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="7933e7ac-e407-4b0f-aeb8-47756eb73c97" name="Default Changelist" comment="" />
+    <list default="true" id="7933e7ac-e407-4b0f-aeb8-47756eb73c97" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/parser.go" beforeDir="false" afterPath="$PROJECT_DIR$/parser.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -11,7 +13,11 @@
     <option name="myElementSize" value="723" />
   </component>
   <component name="GOROOT" path="/usr/local/Cellar/go/1.13.5/libexec" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1YR8TzV03Wis7nsLmzpFsPbSJHy" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
@@ -112,26 +118,26 @@
       <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state x="975" y="367" key="#go_build_parser.go/0.23.2560.1417@0.23.2560.1417" timestamp="1582909185004" />
-    <state width="2518" height="400" key="GridCell.Tab.0.bottom" timestamp="1583137343325">
+    <state width="2518" height="400" key="GridCell.Tab.0.bottom" timestamp="1583137776049">
       <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state width="1638" height="400" key="GridCell.Tab.0.bottom/0.23.1680.1027@0.23.1680.1027" timestamp="1583061080549" />
-    <state width="2518" height="400" key="GridCell.Tab.0.bottom/0.23.2560.1417@0.23.2560.1417" timestamp="1583137343325" />
-    <state width="2518" height="400" key="GridCell.Tab.0.center" timestamp="1583137343324">
+    <state width="2518" height="400" key="GridCell.Tab.0.bottom/0.23.2560.1417@0.23.2560.1417" timestamp="1583137776049" />
+    <state width="2518" height="400" key="GridCell.Tab.0.center" timestamp="1583137776048">
       <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state width="1638" height="400" key="GridCell.Tab.0.center/0.23.1680.1027@0.23.1680.1027" timestamp="1583061080549" />
-    <state width="2518" height="400" key="GridCell.Tab.0.center/0.23.2560.1417@0.23.2560.1417" timestamp="1583137343324" />
-    <state width="2518" height="400" key="GridCell.Tab.0.left" timestamp="1583137343324">
+    <state width="2518" height="400" key="GridCell.Tab.0.center/0.23.2560.1417@0.23.2560.1417" timestamp="1583137776048" />
+    <state width="2518" height="400" key="GridCell.Tab.0.left" timestamp="1583137776047">
       <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state width="1638" height="400" key="GridCell.Tab.0.left/0.23.1680.1027@0.23.1680.1027" timestamp="1583061080548" />
-    <state width="2518" height="400" key="GridCell.Tab.0.left/0.23.2560.1417@0.23.2560.1417" timestamp="1583137343324" />
-    <state width="2518" height="400" key="GridCell.Tab.0.right" timestamp="1583137343324">
+    <state width="2518" height="400" key="GridCell.Tab.0.left/0.23.2560.1417@0.23.2560.1417" timestamp="1583137776047" />
+    <state width="2518" height="400" key="GridCell.Tab.0.right" timestamp="1583137776048">
       <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state width="1638" height="400" key="GridCell.Tab.0.right/0.23.1680.1027@0.23.1680.1027" timestamp="1583061080549" />
-    <state width="2518" height="400" key="GridCell.Tab.0.right/0.23.2560.1417@0.23.2560.1417" timestamp="1583137343324" />
+    <state width="2518" height="400" key="GridCell.Tab.0.right/0.23.2560.1417@0.23.2560.1417" timestamp="1583137776048" />
     <state width="2518" height="491" key="GridCell.Tab.1.bottom" timestamp="1583136374063">
       <screen x="0" y="23" width="2560" height="1417" />
     </state>

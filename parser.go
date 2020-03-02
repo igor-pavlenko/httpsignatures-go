@@ -136,7 +136,7 @@ func (p *parser) parseKey(cur byte) error {
 		p.key = append(p.key, cur)
 	} else if cur == equal {
 		p.keyNow = false
-		if p.getValueType(p.key) == "string" {
+		if p.getValueType() == "string" {
 			p.quoteNow = true
 		} else {
 			p.intValueNow = true
@@ -153,7 +153,7 @@ func (p *parser) parseKey(cur byte) error {
 func (p *parser) parseEqual(cur byte) error {
 	if cur == equal {
 		p.equalNow = false
-		if p.getValueType(p.key) == "string" {
+		if p.getValueType() == "string" {
 			p.quoteNow = true
 		} else {
 			p.intValueNow = true
@@ -225,8 +225,8 @@ func (p *parser) parseDiv(cur byte) error {
 	return nil
 }
 
-func (p *parser) getValueType(key []byte) string {
-	k := string(key)
+func (p *parser) getValueType() string {
+	k := string(p.key)
 	if k == "created" || k == "expires" {
 		return "int"
 	}
