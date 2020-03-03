@@ -1,11 +1,25 @@
-sudo: false
+dist: bionic
+
 language: go
+
 env:
   - GO111MODULE=on
+  - GOFLAGS='-mod vendor'
+
+git:
+  depth: 1
+
+install: true
+
 go:
   - 1.10.x
   - 1.11.x
   - 1.12.x
   - 1.13.x
+
 before_install:
   - go get -v golang.org/x/lint/golint
+
+script:
+  - golint ./...
+  - go test -v ./...

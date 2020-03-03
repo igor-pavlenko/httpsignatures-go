@@ -20,9 +20,10 @@ var div byte = 44   // ,
 var from0 byte = 48 // 0
 var to9 byte = 57   // 9
 
+// ParsedHeader header parsed into params
 type ParsedHeader struct {
 	keyword   string
-	keyId     string
+	keyID     string
 	algorithm string
 	created   time.Time
 	expires   time.Time // Not implemented: "Subsecod precision is allowed using decimal notation."
@@ -30,11 +31,13 @@ type ParsedHeader struct {
 	signature string
 }
 
+// ParserError errors during parsing
 type ParserError struct {
 	Message string
 	Err     error
 }
 
+// Error error message
 func (e *ParserError) Error() string {
 	if e.Err != nil {
 		return e.Message + ": " + e.Err.Error()
@@ -42,11 +45,13 @@ func (e *ParserError) Error() string {
 	return e.Message
 }
 
+// Unwrap error
 func (e *ParserError) Unwrap() error {
 	return e.Err
 }
 
-type parser struct {
+// Parser parser internal struct
+type Parser struct {
 	header  string
 	result  ParsedHeader
 	keyword []byte
@@ -56,23 +61,26 @@ type parser struct {
 	params  map[string]bool
 }
 
-func Create() *parser {
-	p := new(parser)
+// New create new parser
+func New() *Parser {
+	p := new(Parser)
 	p.params = make(map[string]bool)
 	return p
 }
 
-func (p *parser) ParseAuthorization(header string) (ParsedHeader, error) {
+// ParseAuthorization parse Authorization header
+func (p *Parser) ParseAuthorization(header string) (ParsedHeader, error) {
 	p.flag = "keyword"
 	return p.parse(header)
 }
 
-func (p *parser) ParseSignature(header string) (ParsedHeader, error) {
+// ParseSignature parse Signature header
+func (p *Parser) ParseSignature(header string) (ParsedHeader, error) {
 	p.flag = "param"
 	return p.parse(header)
 }
 
-func (p *parser) parse(header string) (ParsedHeader, error) {
+func (p *Parser) parse(header string) (ParsedHeader, error) {
 	if len(header) == 0 {
 		return ParsedHeader{}, &ParserError{"empty header", nil}
 	}
@@ -148,7 +156,7 @@ func (p *parser) parse(header string) (ParsedHeader, error) {
 	return p.result, nil
 }
 
-func (p *parser) parseKeyword(cur byte) error {
+func (p *Parser) parseKeyword(cur byte) error {
 	if (cur >= fromA && cur <= toZ) || (cur >= froma && cur <= toz) {
 		p.keyword = append(p.keyword, cur)
 	} else if cur == space && len(p.keyword) > 0 {
@@ -160,7 +168,7 @@ func (p *parser) parseKeyword(cur byte) error {
 	return nil
 }
 
-func (p *parser) parseKey(cur byte) error {
+func (p *Parser) parseKey(cur byte) error {
 	if (cur >= fromA && cur <= toZ) || (cur >= froma && cur <= toz) {
 		p.key = append(p.key, cur)
 	} else if cur == equal {
@@ -181,7 +189,7 @@ func (p *parser) parseKey(cur byte) error {
 	return nil
 }
 
-func (p *parser) parseEqual(cur byte) error {
+func (p *Parser) parseEqual(cur byte) error {
 	if cur == equal {
 		t := p.getValueType()
 		if t == "string" {
@@ -200,7 +208,7 @@ func (p *parser) parseEqual(cur byte) error {
 	return nil
 }
 
-func (p *parser) parseQuote(cur byte) error {
+func (p *Parser) parseQuote(cur byte) error {
 	if cur == quote {
 		p.flag = "stringValue"
 	} else if cur == space {
@@ -214,7 +222,7 @@ func (p *parser) parseQuote(cur byte) error {
 	return nil
 }
 
-func (p *parser) parseStringValue(cur byte) error {
+func (p *Parser) parseStringValue(cur byte) error {
 	if cur != quote {
 		p.value = append(p.value, cur)
 	} else if cur == quote {
@@ -226,7 +234,7 @@ func (p *parser) parseStringValue(cur byte) error {
 	return nil
 }
 
-func (p *parser) parseIntValue(cur byte) error {
+func (p *Parser) parseIntValue(cur byte) error {
 	if cur >= from0 && cur <= to9 {
 		p.value = append(p.value, cur)
 	} else if cur == space {
@@ -246,7 +254,7 @@ func (p *parser) parseIntValue(cur byte) error {
 	return nil
 }
 
-func (p *parser) parseDiv(cur byte) error {
+func (p *Parser) parseDiv(cur byte) error {
 	if cur == div {
 		p.flag = "param"
 	} else if cur == space {
@@ -260,7 +268,7 @@ func (p *parser) parseDiv(cur byte) error {
 	return nil
 }
 
-func (p *parser) getValueType() string {
+func (p *Parser) getValueType() string {
 	k := string(p.key)
 	if k == "created" || k == "expires" {
 		return "int"
@@ -268,7 +276,7 @@ func (p *parser) getValueType() string {
 	return "string"
 }
 
-func (p *parser) setKeyword() error {
+func (p *Parser) setKeyword() error {
 	if "Signature" != string(p.keyword) {
 		return &ParserError{
 			"invalid Authorization header, must start from Signature keyword",
@@ -279,7 +287,7 @@ func (p *parser) setKeyword() error {
 	return nil
 }
 
-func (p *parser) set() error {
+func (p *Parser) set() error {
 	k := string(p.key)
 	v := p.value
 
@@ -298,12 +306,11 @@ func (p *parser) set() error {
 			fmt.Sprintf("duplicate param '%s'", k),
 			nil,
 		}
-	} else {
-		p.params[k] = true
 	}
+	p.params[k] = true
 
-	if k == "keyId" {
-		p.result.keyId = string(v)
+	if k == "keyID" {
+		p.result.keyID = string(v)
 	} else if k == "algorithm" {
 		p.result.algorithm = string(v)
 	} else if k == "headers" {
@@ -325,7 +332,7 @@ func (p *parser) set() error {
 	return nil
 }
 
-func (p *parser) intToTime(v []byte) (time.Time, error) {
+func (p *Parser) intToTime(v []byte) (time.Time, error) {
 	var err error
 	var sec int64
 	if sec, err = strconv.ParseInt(string(v), 10, 32); err != nil {
