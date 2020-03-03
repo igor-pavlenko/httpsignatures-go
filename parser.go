@@ -30,6 +30,22 @@ type ParsedHeader struct {
 	signature string
 }
 
+type ParserError struct {
+	Message string
+	Err     error
+}
+
+func (e *ParserError) Error() string {
+	if e.Err != nil {
+		return e.Message + ": " + e.Err.Error()
+	}
+	return e.Message
+}
+
+func (e *ParserError) Unwrap() error {
+	return e.Err
+}
+
 type parser struct {
 	header  string
 	result  ParsedHeader
@@ -37,10 +53,12 @@ type parser struct {
 	key     []byte
 	value   []byte
 	flag    string
+	params  map[string]bool
 }
 
 func Create() *parser {
 	p := new(parser)
+	p.params = make(map[string]bool)
 	return p
 }
 
@@ -56,7 +74,7 @@ func (p *parser) ParseSignature(header string) (ParsedHeader, error) {
 
 func (p *parser) parse(header string) (ParsedHeader, error) {
 	if len(header) == 0 {
-		return ParsedHeader{}, fmt.Errorf("empty header")
+		return ParsedHeader{}, &ParserError{"empty header", nil}
 	}
 
 	r := strings.NewReader(header)
@@ -71,19 +89,19 @@ func (p *parser) parse(header string) (ParsedHeader, error) {
 				break
 			case "param":
 				if len(p.key) == 0 {
-					err = fmt.Errorf("unexpected end of header, expected parameter")
+					err = &ParserError{"unexpected end of header, expected parameter", nil}
 				} else {
-					err = fmt.Errorf("unexpected end of header, expected '=' symbol and field value")
+					err = &ParserError{"unexpected end of header, expected '=' symbol and field value", nil}
 				}
 				break
 			case "equal":
-				err = fmt.Errorf("unexpected end of header, expected field value")
+				err = &ParserError{"unexpected end of header, expected field value", nil}
 				break
 			case "quote":
-				err = fmt.Errorf("unexpected end of header, expected '\"' symbol and field value")
+				err = &ParserError{"unexpected end of header, expected '\"' symbol and field value", nil}
 				break
 			case "stringValue":
-				err = fmt.Errorf("unexpected end of header, expected '\"' symbol")
+				err = &ParserError{"unexpected end of header, expected '\"' symbol", nil}
 				break
 			case "intValue":
 				err = p.set()
@@ -119,7 +137,8 @@ func (p *parser) parse(header string) (ParsedHeader, error) {
 			err = p.parseDiv(cur)
 			break
 		default:
-			err = fmt.Errorf("unexpected parser stage")
+			err = &ParserError{"unexpected parser stage", nil}
+
 		}
 		if err != nil {
 			return ParsedHeader{}, err
@@ -154,7 +173,10 @@ func (p *parser) parseKey(cur byte) error {
 	} else if cur == space && len(p.key) > 0 {
 		p.flag = "equal"
 	} else if cur != space {
-		return fmt.Errorf("found '%s' — unsupported symbol in key", string(cur))
+		return &ParserError{
+			fmt.Sprintf("found '%s' — unsupported symbol in key", string(cur)),
+			nil,
+		}
 	}
 	return nil
 }
@@ -170,7 +192,10 @@ func (p *parser) parseEqual(cur byte) error {
 	} else if cur == space {
 		return nil
 	} else {
-		return fmt.Errorf("found '%s' — unsupported symbol, expected '=' or space symbol", string(cur))
+		return &ParserError{
+			fmt.Sprintf("found '%s' — unsupported symbol, expected '=' or space symbol", string(cur)),
+			nil,
+		}
 	}
 	return nil
 }
@@ -181,7 +206,10 @@ func (p *parser) parseQuote(cur byte) error {
 	} else if cur == space {
 		return nil
 	} else {
-		return fmt.Errorf("found '%s' — unsupported symbol, expected '\"' or space symbol", string(cur))
+		return &ParserError{
+			fmt.Sprintf("found '%s' — unsupported symbol, expected '\"' or space symbol", string(cur)),
+			nil,
+		}
 	}
 	return nil
 }
@@ -224,7 +252,10 @@ func (p *parser) parseDiv(cur byte) error {
 	} else if cur == space {
 		return nil
 	} else {
-		return fmt.Errorf("found '%s' — unsupported symbol, expected ',' or space symbol", string(cur))
+		return &ParserError{
+			fmt.Sprintf("found '%s' — unsupported symbol, expected ',' or space symbol", string(cur)),
+			nil,
+		}
 	}
 	return nil
 }
@@ -239,7 +270,10 @@ func (p *parser) getValueType() string {
 
 func (p *parser) setKeyword() error {
 	if "Signature" != string(p.keyword) {
-		return fmt.Errorf("invalid Authorization header, must start from Signature keyword")
+		return &ParserError{
+			"invalid Authorization header, must start from Signature keyword",
+			nil,
+		}
 	}
 	p.result.keyword = "Signature"
 	return nil
@@ -247,38 +281,55 @@ func (p *parser) setKeyword() error {
 
 func (p *parser) set() error {
 	k := string(p.key)
-	if len(p.value) == 0 {
-		return fmt.Errorf("empty value for key '%s'", k)
-	}
-
-	if k == "keyId" {
-		p.result.keyId = string(p.value)
-	} else if k == "algorithm" {
-		p.result.algorithm = string(p.value)
-	} else if k == "headers" {
-		p.result.headers = strings.Fields(string(p.value))
-	} else if k == "signature" {
-		p.result.signature = string(p.value)
-	} else if k == "created" {
-		var err error
-		var sec int64
-		if sec, err = strconv.ParseInt(string(p.value), 10, 32); err != nil {
-			return fmt.Errorf("wrong 'created' param value: %v", err)
-		}
-		p.result.created = time.Unix(sec, 0)
-	} else if k == "expires" {
-		var err error
-		var sec int64
-		if sec, err = strconv.ParseInt(string(p.value), 10, 32); err != nil {
-			return fmt.Errorf("wrong 'expires' param value: %v", err)
-		}
-		p.result.expires = time.Unix(sec, 0)
-	} else {
-		return fmt.Errorf("unknown parameter: '%s'", k)
-	}
+	v := p.value
 
 	p.key = nil
 	p.value = nil
 
+	if len(v) == 0 {
+		return &ParserError{
+			fmt.Sprintf("empty value for key '%s'", k),
+			nil,
+		}
+	}
+
+	if p.params[k] == true {
+		return &ParserError{
+			fmt.Sprintf("duplicate param '%s'", k),
+			nil,
+		}
+	} else {
+		p.params[k] = true
+	}
+
+	if k == "keyId" {
+		p.result.keyId = string(v)
+	} else if k == "algorithm" {
+		p.result.algorithm = string(v)
+	} else if k == "headers" {
+		p.result.headers = strings.Fields(string(v))
+	} else if k == "signature" {
+		p.result.signature = string(v)
+	} else if k == "created" {
+		var err error
+		if p.result.created, err = p.intToTime(v); err != nil {
+			return &ParserError{"wrong 'created' param value", err}
+		}
+	} else if k == "expires" {
+		var err error
+		if p.result.expires, err = p.intToTime(v); err != nil {
+			return &ParserError{"wrong 'expires' param value", err}
+		}
+	}
+
 	return nil
+}
+
+func (p *parser) intToTime(v []byte) (time.Time, error) {
+	var err error
+	var sec int64
+	if sec, err = strconv.ParseInt(string(v), 10, 32); err != nil {
+		return time.Unix(0, 0), err
+	}
+	return time.Unix(sec, 0), nil
 }

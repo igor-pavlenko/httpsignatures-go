@@ -13,7 +13,9 @@ func TestCreate(t *testing.T) {
 	}{
 		{
 			name: "Successful",
-			want: &parser{},
+			want: &parser{
+				params: make(map[string]bool),
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -270,8 +272,8 @@ func TestParserParse(t *testing.T) {
 				header: `key="v1"`,
 			},
 			want:       ParsedHeader{},
-			wantErr:    true,
-			wantErrMsg: "unknown parameter: 'key'",
+			wantErr:    false,
+			wantErrMsg: "",
 		},
 		{
 			name: "unexpected end of header, expected equal symbol",
@@ -381,6 +383,17 @@ func TestParserParse(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775807\": value out of range",
 		},
+		{
+			name: "Ambiguous Parameters",
+			args: args{
+				header: `keyId="v1",ambiguous="v2",sig="v3"`,
+			},
+			want:       ParsedHeader{
+				keyId: "v1",
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -391,6 +404,9 @@ func TestParserParse(t *testing.T) {
 				p.flag = "param"
 			}
 			got, err := p.parse(tt.args.header)
+			if e, ok := err.(*ParserError); err != nil && ok == false {
+				t.Errorf("unexpected error type %v", e)
+			}
 			if err != nil && err.Error() != tt.wantErrMsg {
 				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
 			}
@@ -437,6 +453,9 @@ func TestParserParseAuthorization(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := Create()
 			got, err := p.ParseAuthorization(tt.args.header)
+			if e, ok := err.(*ParserError); err != nil && ok == false {
+				t.Errorf("unexpected error type %v", e)
+			}
 			if err != nil && err.Error() != tt.wantErrMsg {
 				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
 			}
@@ -482,6 +501,9 @@ func TestParserParseSignature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := Create()
 			got, err := p.ParseSignature(tt.args.header)
+			if e, ok := err.(*ParserError); err != nil && ok == false {
+				t.Errorf("unexpected error type %v", e)
+			}
 			if err != nil && err.Error() != tt.wantErrMsg {
 				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
 			}
@@ -520,6 +542,96 @@ func TestParserParseFailed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := Create()
 			got, err := p.parse(tt.args.header)
+			if e, ok := err.(*ParserError); err != nil && ok == false {
+				t.Errorf("unexpected error type %v", e)
+			}
+			if err != nil && err.Error() != tt.wantErrMsg {
+				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
+			}
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parse() error = `%v`, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parse() got = %v,\nwant %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParserParseDuplicateParams(t *testing.T) {
+	type args struct {
+		header string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       ParsedHeader
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "Duplicate keyId",
+			args: args{
+				header: `keyId="v1",keyId="v2"`,
+			},
+			want:       ParsedHeader{},
+			wantErr:    true,
+			wantErrMsg: "duplicate param 'keyId'",
+		},
+		{
+			name: "Duplicate algorithm",
+			args: args{
+				header: `algorithm="v1",algorithm="v2"`,
+			},
+			want:       ParsedHeader{},
+			wantErr:    true,
+			wantErrMsg: "duplicate param 'algorithm'",
+		},
+		{
+			name: "Duplicate created",
+			args: args{
+				header: `created=1402170695,created=1402170695`,
+			},
+			want:       ParsedHeader{},
+			wantErr:    true,
+			wantErrMsg: "duplicate param 'created'",
+		},
+		{
+			name: "Duplicate expires",
+			args: args{
+				header: `expires=1402170699,expires=1402170699`,
+			},
+			want:       ParsedHeader{},
+			wantErr:    true,
+			wantErrMsg: "duplicate param 'expires'",
+		},
+		{
+			name: "Duplicate headers",
+			args: args{
+				header: `headers="v1",headers="v2"`,
+			},
+			want:       ParsedHeader{},
+			wantErr:    true,
+			wantErrMsg: "duplicate param 'headers'",
+		},
+		{
+			name: "Duplicate signature",
+			args: args{
+				header: `signature="v1",signature="v2"`,
+			},
+			want:       ParsedHeader{},
+			wantErr:    true,
+			wantErrMsg: "duplicate param 'signature'",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Create()
+			p.flag = "param"
+			got, err := p.parse(tt.args.header)
+			if e, ok := err.(*ParserError); err != nil && ok == false {
+				t.Errorf("unexpected error type %v", e)
+			}
 			if err != nil && err.Error() != tt.wantErrMsg {
 				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
 			}
