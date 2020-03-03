@@ -3,8 +3,9 @@ language: go
 env:
   - GO111MODULE=on
 go:
-  - 1.1
-  - 1.2
-  - 1.3
-  - 1.4
-  - tip
+  - 1.10.x
+  - 1.11.x
+  - 1.12.x
+  - 1.13.x
+before_install:
+  - go get -v golang.org/x/lint/golint
