@@ -2,9 +2,7 @@ dist: bionic
 
 language: go
 
-env:
-  - GO111MODULE=on
-  - GOFLAGS='-mod vendor'
+env: GO111MODULE=on GOFLAGS='-mod vendor'
 
 git:
   depth: 1
