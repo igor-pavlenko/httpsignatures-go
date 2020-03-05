@@ -341,20 +341,20 @@ func TestParserParse(t *testing.T) {
 		{
 			name: "Wrong created INT value with space at the end",
 			args: args{
-				header: `created=9223372036854775807 `,
+				header: `created=9223372036854775808 `,
 			},
 			want:       ParsedHeader{},
 			wantErr:    true,
-			wantErrMsg: "wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775807\": value out of range",
+			wantErrMsg: "wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775808\": value out of range",
 		},
 		{
 			name: "Wrong created INT value with divider",
 			args: args{
-				header: `created=9223372036854775807,`,
+				header: `created=9223372036854775809,`,
 			},
 			want:       ParsedHeader{},
 			wantErr:    true,
-			wantErrMsg: "wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775807\": value out of range",
+			wantErrMsg: "wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775809\": value out of range",
 		},
 		{
 			name: "Wrong expires INT value",
@@ -368,20 +368,20 @@ func TestParserParse(t *testing.T) {
 		{
 			name: "Wrong expires with space at the end",
 			args: args{
-				header: `expires=9223372036854775807 `,
+				header: `expires=9223372036854775808 `,
 			},
 			want:       ParsedHeader{},
 			wantErr:    true,
-			wantErrMsg: "wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775807\": value out of range",
+			wantErrMsg: "wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775808\": value out of range",
 		},
 		{
 			name: "Wrong expires with divider",
 			args: args{
-				header: `expires=9223372036854775807,`,
+				header: `expires=9223372036854775809,`,
 			},
 			want:       ParsedHeader{},
 			wantErr:    true,
-			wantErrMsg: "wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775807\": value out of range",
+			wantErrMsg: "wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775809\": value out of range",
 		},
 		{
 			name: "Ambiguous Parameters",
@@ -434,7 +434,7 @@ func TestParserParseAuthorization(t *testing.T) {
 		{
 			name: "Authorization",
 			args: args{
-				header: `Signature keyID="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date content-type digest content-length",signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`,
+				header: `Signature keyID="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date digest content-length",signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`,
 			},
 			want: ParsedHeader{
 				keyword:   "Signature",
@@ -442,7 +442,7 @@ func TestParserParseAuthorization(t *testing.T) {
 				algorithm: "rsa-sha256",
 				created:   time.Unix(1402170695, 0),
 				expires:   time.Unix(1402170699, 0),
-				headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "content-type", "digest", "content-length",},
+				headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "digest", "content-length",},
 				signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
 			},
 			wantErr:    false,
@@ -483,11 +483,11 @@ func TestParserParseSignature(t *testing.T) {
 		{
 			name: "Signature",
 			args: args{
-				header: `keyID="Test", algorithm="rsa-sha256", created=1402170695, expires=1402170699, headers="(request-target) (created) (expires)", signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`,
+				header: `keyID="Test", algorithm="rsa-sha512", created=1402170695, expires=1402170699, headers="(request-target) (created) (expires)", signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`,
 			},
 			want: ParsedHeader{
 				keyID:     "Test",
-				algorithm: "rsa-sha256",
+				algorithm: "rsa-sha512",
 				created:   time.Unix(1402170695, 0),
 				expires:   time.Unix(1402170699, 0),
 				headers:   []string{"(request-target)", "(created)", "(expires)",},

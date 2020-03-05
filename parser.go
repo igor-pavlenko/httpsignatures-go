@@ -45,11 +45,6 @@ func (e *ParserError) Error() string {
 	return e.Message
 }
 
-// Unwrap error
-func (e *ParserError) Unwrap() error {
-	return e.Err
-}
-
 // Parser parser internal struct
 type Parser struct {
 	header  string

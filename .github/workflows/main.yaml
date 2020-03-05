@@ -1,4 +1,4 @@
-name: Linter & Tests
+name: linter & tests
 
 on: [push, pull_request]
 
