@@ -289,12 +289,8 @@ func (p *Parser) setKeyword() error {
 
 func (p *Parser) set() error {
 	k := string(p.key)
-	v := p.value
 
-	p.key = nil
-	p.value = nil
-
-	if len(v) == 0 {
+	if len(p.value) == 0 {
 		return &ParserError{
 			fmt.Sprintf("empty value for key '%s'", k),
 			nil,
@@ -310,24 +306,27 @@ func (p *Parser) set() error {
 	p.params[k] = true
 
 	if k == "keyID" {
-		p.result.keyID = string(v)
+		p.result.keyID = string(p.value)
 	} else if k == "algorithm" {
-		p.result.algorithm = string(v)
+		p.result.algorithm = string(p.value)
 	} else if k == "headers" {
-		p.result.headers = strings.Fields(string(v))
+		p.result.headers = strings.Fields(string(p.value))
 	} else if k == "signature" {
-		p.result.signature = string(v)
+		p.result.signature = string(p.value)
 	} else if k == "created" {
 		var err error
-		if p.result.created, err = p.intToTime(v); err != nil {
+		if p.result.created, err = p.intToTime(p.value); err != nil {
 			return &ParserError{"wrong 'created' param value", err}
 		}
 	} else if k == "expires" {
 		var err error
-		if p.result.expires, err = p.intToTime(v); err != nil {
+		if p.result.expires, err = p.intToTime(p.value); err != nil {
 			return &ParserError{"wrong 'expires' param value", err}
 		}
 	}
+
+	p.key = nil
+	p.value = nil
 
 	return nil
 }
