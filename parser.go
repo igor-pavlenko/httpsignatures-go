@@ -85,31 +85,7 @@ func (p *Parser) parse(header string) (ParsedHeader, error) {
 	for {
 		_, err := r.Read(b)
 		if err == io.EOF {
-			err = nil
-			switch p.flag {
-			case "keyword":
-				err = p.setKeyword()
-				break
-			case "param":
-				if len(p.key) == 0 {
-					err = &ParserError{"unexpected end of header, expected parameter", nil}
-				} else {
-					err = &ParserError{"unexpected end of header, expected '=' symbol and field value", nil}
-				}
-				break
-			case "equal":
-				err = &ParserError{"unexpected end of header, expected field value", nil}
-				break
-			case "quote":
-				err = &ParserError{"unexpected end of header, expected '\"' symbol and field value", nil}
-				break
-			case "stringValue":
-				err = &ParserError{"unexpected end of header, expected '\"' symbol", nil}
-				break
-			case "intValue":
-				err = p.set()
-				break
-			}
+			err = p.handleEOF()
 			if err != nil {
 				return ParsedHeader{}, err
 			}
@@ -149,6 +125,36 @@ func (p *Parser) parse(header string) (ParsedHeader, error) {
 	}
 
 	return p.result, nil
+}
+
+func (p *Parser) handleEOF() error {
+	var err error = nil
+	switch p.flag {
+	case "keyword":
+		err = p.setKeyword()
+		break
+	case "param":
+		if len(p.key) == 0 {
+			err = &ParserError{"unexpected end of header, expected parameter", nil}
+		} else {
+			err = &ParserError{"unexpected end of header, expected '=' symbol and field value", nil}
+		}
+		break
+	case "equal":
+		err = &ParserError{"unexpected end of header, expected field value", nil}
+		break
+	case "quote":
+		err = &ParserError{"unexpected end of header, expected '\"' symbol and field value", nil}
+		break
+	case "stringValue":
+		err = &ParserError{"unexpected end of header, expected '\"' symbol", nil}
+		break
+	case "intValue":
+		err = p.set()
+		break
+	}
+
+	return err
 }
 
 func (p *Parser) parseKeyword(cur byte) error {
