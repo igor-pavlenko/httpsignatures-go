@@ -16,7 +16,9 @@ jobs:
       - name: Install golangci-lint
         run: go get github.com/golangci/golangci-lint/cmd/golangci-lint
       - name: Run linter
-        run: golint ./...
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          golint ./...
 
   test:
     name: Tests
