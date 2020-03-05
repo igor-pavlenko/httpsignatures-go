@@ -388,7 +388,7 @@ func TestParserParse(t *testing.T) {
 			args: args{
 				header: `keyID="v1",ambiguous="v2",sig="v3"`,
 			},
-			want:       ParsedHeader{
+			want: ParsedHeader{
 				keyID: "v1",
 			},
 			wantErr:    false,
@@ -398,7 +398,7 @@ func TestParserParse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
-			if tt.args.authorization == true {
+			if true == tt.args.authorization {
 				p.flag = "keyword"
 			} else {
 				p.flag = "param"
