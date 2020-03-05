@@ -403,7 +403,7 @@ func TestParserParse(t *testing.T) {
 			} else {
 				p.flag = "param"
 			}
-			got, err := p.parse(tt.args.header)
+			var got, err = p.parse(tt.args.header)
 			if e, ok := err.(*ParserError); err != nil && ok == false {
 				t.Errorf("unexpected error type %v", e)
 			}
@@ -452,7 +452,7 @@ func TestParserParseAuthorization(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
-			got, err := p.ParseAuthorization(tt.args.header)
+			var got, err = p.ParseAuthorization(tt.args.header)
 			if e, ok := err.(*ParserError); err != nil && ok == false {
 				t.Errorf("unexpected error type %v", e)
 			}
@@ -500,7 +500,7 @@ func TestParserParseSignature(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
-			got, err := p.ParseSignature(tt.args.header)
+			var got, err = p.ParseSignature(tt.args.header)
 			if e, ok := err.(*ParserError); err != nil && ok == false {
 				t.Errorf("unexpected error type %v", e)
 			}
@@ -541,7 +541,7 @@ func TestParserParseFailed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
-			got, err := p.parse(tt.args.header)
+			var got, err = p.parse(tt.args.header)
 			if e, ok := err.(*ParserError); err != nil && ok == false {
 				t.Errorf("unexpected error type %v", e)
 			}

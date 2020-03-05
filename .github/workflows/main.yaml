@@ -1,6 +1,6 @@
 name: linter & tests
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   linter:
@@ -36,4 +36,6 @@ jobs:
         with:
           fetch-depth: 1
       - name: Run tests
-        run: go test -v ./...
+        run: go test -v -covermode=atomic -coverprofile=coverage.out ./...
+      - name: Codecov.io
+        run: bash <(curl -s https://codecov.io/bash)

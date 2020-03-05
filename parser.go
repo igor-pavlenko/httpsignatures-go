@@ -153,7 +153,6 @@ func (p *Parser) handleEOF() error {
 		err = p.set()
 		break
 	}
-
 	return err
 }
 
