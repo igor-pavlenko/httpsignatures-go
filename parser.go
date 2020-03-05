@@ -128,7 +128,7 @@ func (p *Parser) parse(header string) (ParsedHeader, error) {
 }
 
 func (p *Parser) handleEOF() error {
-	var err error = nil
+	var err error
 	switch p.flag {
 	case "keyword":
 		err = p.setKeyword()
