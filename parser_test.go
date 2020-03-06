@@ -402,11 +402,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
-			if true == tt.args.authorization {
-				p.flag = "keyword"
-			} else {
-				p.flag = "param"
-			}
+			p.flag = "param"
 			var got, err = p.parse(tt.args.header)
 			assert(t, tt, got, err)
 		})
