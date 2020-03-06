@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestParserParse(t *testing.T) {
+func TestParserParseSignleFields(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "Authorization: Empty header",
@@ -133,32 +133,6 @@ func TestParserParse(t *testing.T) {
 			wantErrMsg: "",
 		},
 		{
-			name: "Authorization: Signature and created",
-			args: args{
-				header:        `Signature created=1402170695`,
-				authorization: true,
-			},
-			want: ParsedHeader{
-				keyword: "Signature",
-				created: time.Unix(1402170695, 0),
-			},
-			wantErr:    false,
-			wantErrMsg: "",
-		},
-		{
-			name: "Authorization: Signature and expires",
-			args: args{
-				header:        `Signature expires=1402170699`,
-				authorization: true,
-			},
-			want: ParsedHeader{
-				keyword: "Signature",
-				expires: time.Unix(1402170699, 0),
-			},
-			wantErr:    false,
-			wantErrMsg: "",
-		},
-		{
 			name: "Authorization: Signature and headers",
 			args: args{
 				header:        `Signature headers="(request-target) (created)" `,
@@ -185,7 +159,7 @@ func TestParserParse(t *testing.T) {
 			wantErrMsg: "",
 		},
 		{
-			name: "Authorization: Signature and all params",
+			name: "Authorization: Signature and all params without spaces",
 			args: args{
 				header:        `Signature keyID="v1",algorithm="v2",created=1402170695,expires=1402170699,headers="v-3 v-4",signature="v5"`,
 				authorization: true,
@@ -234,16 +208,6 @@ func TestParserParse(t *testing.T) {
 				headers:   []string{"v-3", "v-4"},
 				signature: "v5",
 			},
-			wantErr:    false,
-			wantErrMsg: "",
-		},
-		{
-			name: "Signature: real example",
-			args: args{
-				header:        validHeader,
-				authorization: false,
-			},
-			want: validParsedHeader,
 			wantErr:    false,
 			wantErrMsg: "",
 		},
@@ -337,6 +301,49 @@ func TestParserParse(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "found 'a' — unsupported symbol, expected ',' or space symbol",
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := New()
+			if true == tt.args.authorization {
+				p.flag = "keyword"
+			} else {
+				p.flag = "param"
+			}
+			var got, err = p.parse(tt.args.header)
+			assert(t, tt, got, err)
+		})
+	}
+}
+
+func TestParserParseCreatedExpires(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "Authorization: Signature and created",
+			args: args{
+				header:        `Signature created=1402170695`,
+				authorization: true,
+			},
+			want: ParsedHeader{
+				keyword: "Signature",
+				created: time.Unix(1402170695, 0),
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "Authorization: Signature and expires",
+			args: args{
+				header:        `Signature expires=1402170699`,
+				authorization: true,
+			},
+			want: ParsedHeader{
+				keyword: "Signature",
+				expires: time.Unix(1402170699, 0),
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
 		{
 			name: "Wrong created INT value",
 			args: args{
@@ -390,17 +397,6 @@ func TestParserParse(t *testing.T) {
 			want:       ParsedHeader{},
 			wantErr:    true,
 			wantErrMsg: "wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775809\": value out of range",
-		},
-		{
-			name: "Ambiguous Parameters",
-			args: args{
-				header: `keyID="v1",ambiguous="v2",sig="v3"`,
-			},
-			want: ParsedHeader{
-				keyID: "v1",
-			},
-			wantErr:    false,
-			wantErrMsg: "",
 		},
 	}
 	for _, tt := range tests {
@@ -478,6 +474,29 @@ func TestParserParseFailed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
 			var got, err = p.parse(tt.args.header)
+			assert(t, tt, got, err)
+		})
+	}
+}
+
+func TestParserParseAmbiguousParams(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "Ambiguous Parameters",
+			args: args{
+				header: `keyID="v1",ambiguous="v2",sig="v3"`,
+			},
+			want: ParsedHeader{
+				keyID: "v1",
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := New()
+			var got, err = p.ParseSignature(tt.args.header)
 			assert(t, tt, got, err)
 		})
 	}
