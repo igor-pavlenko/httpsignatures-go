@@ -6,6 +6,31 @@ import (
 	"time"
 )
 
+type args struct {
+	header        string
+	authorization bool
+}
+
+type testCase struct {
+	name       string
+	args       args
+	want       ParsedHeader
+	wantErr    bool
+	wantErrMsg string
+}
+
+const validHeader = `keyID="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date digest content-length",signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`
+const validAuthHeader = `Signature ` + validHeader
+
+var validParsedHeader = ParsedHeader{
+	keyID:     "Test",
+	algorithm: "rsa-sha256",
+	created:   time.Unix(1402170695, 0),
+	expires:   time.Unix(1402170699, 0),
+	headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "digest", "content-length"},
+	signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
+}
+
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name string
@@ -28,17 +53,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestParserParse(t *testing.T) {
-	type args struct {
-		header        string
-		authorization bool
-	}
-	tests := []struct {
-		name       string
-		args       args
-		want       ParsedHeader
-		wantErr    bool
-		wantErrMsg string
-	}{
+	tests := []testCase{
 		{
 			name: "Authorization: Empty header",
 			args: args{
@@ -225,17 +240,10 @@ func TestParserParse(t *testing.T) {
 		{
 			name: "Signature: real example",
 			args: args{
-				header:        `keyID="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date content-type digest content-length",signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`,
+				header:        validHeader,
 				authorization: false,
 			},
-			want: ParsedHeader{
-				keyID:     "Test",
-				algorithm: "rsa-sha256",
-				created:   time.Unix(1402170695, 0),
-				expires:   time.Unix(1402170699, 0),
-				headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "content-type", "digest", "content-length"},
-				signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
-			},
+			want: validParsedHeader,
 			wantErr:    false,
 			wantErrMsg: "",
 		},
@@ -404,47 +412,22 @@ func TestParserParse(t *testing.T) {
 				p.flag = "param"
 			}
 			var got, err = p.parse(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf("unexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parse() error = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parse() got = %v,\nwant %v", got, tt.want)
-			}
+			assert(t, tt, got, err)
 		})
 	}
 }
 
 func TestParserParseAuthorization(t *testing.T) {
-	type args struct {
-		header string
-	}
-	tests := []struct {
-		name       string
-		args       args
-		want       ParsedHeader
-		wantErr    bool
-		wantErrMsg string
-	}{
+	var validAuthParsedHeader = validParsedHeader
+	validAuthParsedHeader.keyword = "Signature"
+	tests := []testCase{
 		{
 			name: "Authorization",
 			args: args{
-				header: `Signature keyID="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date digest content-length",signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`,
+				header:        validAuthHeader,
+				authorization: true,
 			},
-			want: ParsedHeader{
-				keyword:   "Signature",
-				keyID:     "Test",
-				algorithm: "rsa-sha256",
-				created:   time.Unix(1402170695, 0),
-				expires:   time.Unix(1402170699, 0),
-				headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "digest", "content-length"},
-				signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
-			},
+			want: validAuthParsedHeader,
 			wantErr:    false,
 			wantErrMsg: "",
 		},
@@ -453,46 +436,19 @@ func TestParserParseAuthorization(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
 			var got, err = p.ParseAuthorization(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf("unexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parse() error = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parse() got = %v,\nwant %v", got, tt.want)
-			}
+			assert(t, tt, got, err)
 		})
 	}
 }
 
 func TestParserParseSignature(t *testing.T) {
-	type args struct {
-		header string
-	}
-	tests := []struct {
-		name       string
-		args       args
-		want       ParsedHeader
-		wantErr    bool
-		wantErrMsg string
-	}{
+	tests := []testCase{
 		{
 			name: "Signature",
 			args: args{
-				header: `keyID="Test", algorithm="rsa-sha512", created=1402170695, expires=1402170699, headers="(request-target) (created) (expires)", signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`,
+				header: validHeader,
 			},
-			want: ParsedHeader{
-				keyID:     "Test",
-				algorithm: "rsa-sha512",
-				created:   time.Unix(1402170695, 0),
-				expires:   time.Unix(1402170699, 0),
-				headers:   []string{"(request-target)", "(created)", "(expires)"},
-				signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
-			},
+			want: validParsedHeader,
 			wantErr:    false,
 			wantErrMsg: "",
 		},
@@ -501,33 +457,13 @@ func TestParserParseSignature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
 			var got, err = p.ParseSignature(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf("unexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parse() error = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parse() got = %v,\nwant %v", got, tt.want)
-			}
+			assert(t, tt, got, err)
 		})
 	}
 }
 
 func TestParserParseFailed(t *testing.T) {
-	type args struct {
-		header string
-	}
-	tests := []struct {
-		name       string
-		args       args
-		want       ParsedHeader
-		wantErr    bool
-		wantErrMsg string
-	}{
+	tests := []testCase{
 		{
 			name: "Current parser stage not set",
 			args: args{
@@ -542,33 +478,13 @@ func TestParserParseFailed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
 			var got, err = p.parse(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf("unexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parse() error = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parse() got = %v,\nwant %v", got, tt.want)
-			}
+			assert(t, tt, got, err)
 		})
 	}
 }
 
 func TestParserParseDuplicateParams(t *testing.T) {
-	type args struct {
-		header string
-	}
-	tests := []struct {
-		name       string
-		args       args
-		want       ParsedHeader
-		wantErr    bool
-		wantErrMsg string
-	}{
+	tests := []testCase{
 		{
 			name: "Duplicate keyID",
 			args: args{
@@ -629,18 +545,22 @@ func TestParserParseDuplicateParams(t *testing.T) {
 			p := New()
 			p.flag = "param"
 			got, err := p.parse(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf("unexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parse() error = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parse() got = %v,\nwant %v", got, tt.want)
-			}
+			assert(t, tt, got, err)
 		})
+	}
+}
+
+func assert(t *testing.T, tt testCase, got interface{}, err error) {
+	if e, ok := err.(*ParserError); err != nil && ok == false {
+		t.Errorf("unexpected error type %v", e)
+	}
+	if err != nil && err.Error() != tt.wantErrMsg {
+		t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
+	}
+	if (err != nil) != tt.wantErr {
+		t.Errorf("parse() error = `%v`, wantErr %v", err, tt.wantErr)
+	}
+	if !reflect.DeepEqual(got, tt.want) {
+		t.Errorf("parse() got = %v,\nwant %v", got, tt.want)
 	}
 }
