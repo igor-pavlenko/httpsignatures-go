@@ -308,18 +308,7 @@ func TestParserParseSignleFields(t *testing.T) {
 				p.flag = "param"
 			}
 			var got, err = p.parse(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf(tt.name+"\nunexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf(tt.name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf(tt.name+"\nerror = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
@@ -417,18 +406,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 			p := New()
 			p.flag = "param"
 			var got, err = p.parse(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf(tt.name+"\nunexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf(tt.name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf(tt.name+"\nerror = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
@@ -462,18 +440,7 @@ func TestParserParseAuthorization(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
 			var got, err = p.ParseAuthorization(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf(tt.name+"\nunexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf(tt.name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf(tt.name+"\nerror = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
@@ -503,18 +470,7 @@ func TestParserParseSignature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
 			var got, err = p.ParseSignature(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf(tt.name+"\nunexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf(tt.name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf(tt.name+"\nerror = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
@@ -544,18 +500,7 @@ func TestParserParseFailed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
 			var got, err = p.parse(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf(tt.name+"\nunexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf(tt.name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf(tt.name+"\nerror = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
@@ -587,18 +532,7 @@ func TestParserParseAmbiguousParams(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := New()
 			var got, err = p.ParseSignature(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf(tt.name+"\nunexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf(tt.name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf(tt.name+"\nerror = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
@@ -674,18 +608,22 @@ func TestParserParseDuplicateParams(t *testing.T) {
 			p := New()
 			p.flag = "param"
 			got, err := p.parse(tt.args.header)
-			if e, ok := err.(*ParserError); err != nil && ok == false {
-				t.Errorf(tt.name+"\nunexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf(tt.name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf(tt.name+"\nerror = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
+	}
+}
+
+func assertParser(t *testing.T, got interface{}, err error, name string, want ParsedHeader, wantErr bool, wantErrMsg string) {
+	if e, ok := err.(*ParserError); err != nil && ok == false {
+		t.Errorf(name + "\n unexpected error type %v", e)
+	}
+	if err != nil && err.Error() != wantErrMsg {
+		t.Errorf(name + "\n error message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
+	}
+	if (err != nil) != wantErr {
+		t.Errorf(name + "\n error = `%v`, wantErr %v", err, wantErr)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf(name + "\n got  = %v,\nwant = %v", got, want)
 	}
 }
