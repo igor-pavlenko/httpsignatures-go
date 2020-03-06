@@ -321,11 +321,9 @@ func TestParserParseCreatedExpires(t *testing.T) {
 		{
 			name: "Authorization: Signature and created",
 			args: args{
-				header:        `Signature created=1402170695`,
-				authorization: true,
+				header:        `created=1402170695`,
 			},
 			want: ParsedHeader{
-				keyword: "Signature",
 				created: time.Unix(1402170695, 0),
 			},
 			wantErr:    false,
@@ -334,11 +332,9 @@ func TestParserParseCreatedExpires(t *testing.T) {
 		{
 			name: "Authorization: Signature and expires",
 			args: args{
-				header:        `Signature expires=1402170699`,
-				authorization: true,
+				header:        `expires=1402170699`,
 			},
 			want: ParsedHeader{
-				keyword: "Signature",
 				expires: time.Unix(1402170699, 0),
 			},
 			wantErr:    false,
@@ -567,15 +563,15 @@ func TestParserParseDuplicateParams(t *testing.T) {
 
 func assert(t *testing.T, tt testCase, got interface{}, err error) {
 	if e, ok := err.(*ParserError); err != nil && ok == false {
-		t.Errorf("unexpected error type %v", e)
+		t.Errorf(tt.name + "\nunexpected error type %v", e)
 	}
 	if err != nil && err.Error() != tt.wantErrMsg {
-		t.Errorf("error message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
+		t.Errorf(tt.name + "\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
 	}
 	if (err != nil) != tt.wantErr {
-		t.Errorf("parse() error = `%v`, wantErr %v", err, tt.wantErr)
+		t.Errorf(tt.name + "\nerror = `%v`, wantErr %v", err, tt.wantErr)
 	}
 	if !reflect.DeepEqual(got, tt.want) {
-		t.Errorf("parse() got = %v,\nwant %v", got, tt.want)
+		t.Errorf(tt.name + "\ngot  = %v,\nwant = %v", got, tt.want)
 	}
 }
