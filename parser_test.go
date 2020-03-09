@@ -32,7 +32,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(); !reflect.DeepEqual(got, tt.want) {
+			if got := NewParser(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("create() = %v, want %v", got, tt.want)
 			}
 		})
@@ -301,13 +301,13 @@ func TestParserParseSignleFields(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := New()
+			p := NewParser()
 			if true == tt.args.authorization {
 				p.flag = "keyword"
 			} else {
 				p.flag = "param"
 			}
-			var got, err = p.parse(tt.args.header)
+			var got, err = p.parseSignature(tt.args.header)
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
@@ -403,9 +403,9 @@ func TestParserParseCreatedExpires(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := New()
+			p := NewParser()
 			p.flag = "param"
-			var got, err = p.parse(tt.args.header)
+			var got, err = p.parseSignature(tt.args.header)
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
@@ -438,8 +438,8 @@ func TestParserParseAuthorization(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := New()
-			var got, err = p.ParseAuthorization(tt.args.header)
+			p := NewParser()
+			var got, err = p.ParseAuthorizationHeader(tt.args.header)
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
@@ -468,14 +468,14 @@ func TestParserParseSignature(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := New()
-			var got, err = p.ParseSignature(tt.args.header)
+			p := NewParser()
+			var got, err = p.ParseSignatureHeader(tt.args.header)
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
 
-func TestParserParseFailed(t *testing.T) {
+func TestParserParseSignatureFailed(t *testing.T) {
 	type args struct {
 		header string
 	}
@@ -487,7 +487,7 @@ func TestParserParseFailed(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name: "Current parser stage not set",
+			name: "Current parser stage not setKeyValue",
 			args: args{
 				header: `keyID="Test"`,
 			},
@@ -498,8 +498,38 @@ func TestParserParseFailed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := New()
-			var got, err = p.parse(tt.args.header)
+			p := NewParser()
+			var got, err = p.parseSignature(tt.args.header)
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestParserParseDigestFailed(t *testing.T) {
+	type args struct {
+		header string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       ParsedDigestHeader
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "Current parser stage not set",
+			args: args{
+				header: `MD5=test`,
+			},
+			want:       ParsedDigestHeader{},
+			wantErr:    true,
+			wantErrMsg: "unexpected parser stage",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			var got, err = p.parseDigest(tt.args.header)
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
@@ -530,8 +560,8 @@ func TestParserParseAmbiguousParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := New()
-			var got, err = p.ParseSignature(tt.args.header)
+			p := NewParser()
+			var got, err = p.ParseSignatureHeader(tt.args.header)
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
@@ -605,25 +635,116 @@ func TestParserParseDuplicateParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := New()
+			p := NewParser()
 			p.flag = "param"
-			got, err := p.parse(tt.args.header)
+			got, err := p.parseSignature(tt.args.header)
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
 
-func assertParser(t *testing.T, got interface{}, err error, name string, want ParsedHeader, wantErr bool, wantErrMsg string) {
+func TestParserParseDigestHeader(t *testing.T) {
+	type args struct {
+		header string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       ParsedDigestHeader
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "MD5 Digest",
+			args: args{
+				header: `MD5=ZDk5NTk4ODgxNjM3MDc5MDQ2MTgzNDQwMzExMThiZWI=`,
+			},
+			want: ParsedDigestHeader{
+				algo:   "MD5",
+				digest: "ZDk5NTk4ODgxNjM3MDc5MDQ2MTgzNDQwMzExMThiZWI=",
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "SHA-1 Digest",
+			args: args{
+				header: `SHA-1=ZDNiMDlhYmUzMGNmZTJlZGZmNGVlOWUwYTE0MWM5M2JmNWIzYWY4Nw==`,
+			},
+			want: ParsedDigestHeader{
+				algo:   "SHA-1",
+				digest: "ZDNiMDlhYmUzMGNmZTJlZGZmNGVlOWUwYTE0MWM5M2JmNWIzYWY4Nw==",
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "SHA-256 Digest",
+			args: args{
+				header: `SHA-256=NWY4ZjA0ZjZhM2E4OTJhYWFiYmRkYjZjZjI3Mzg5NDQ5Mzc3Mzk2MGQ0YTMyNWIxMDVmZWU0NmVlZjQzMDRmMQ==`,
+			},
+			want: ParsedDigestHeader{
+				algo:   "SHA-256",
+				digest: "NWY4ZjA0ZjZhM2E4OTJhYWFiYmRkYjZjZjI3Mzg5NDQ5Mzc3Mzk2MGQ0YTMyNWIxMDVmZWU0NmVlZjQzMDRmMQ==",
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name:       "Empty Digest header",
+			args:       args{},
+			want:       ParsedDigestHeader{},
+			wantErr:    true,
+			wantErrMsg: "empty digest header",
+		},
+		{
+			name:       "Empty Digest value",
+			args:       args{
+				header: `md5`,
+			},
+			want:       ParsedDigestHeader{},
+			wantErr:    true,
+			wantErrMsg: "unexpected end of header, expected digest value",
+		},
+		{
+			name:       "Unsupported digest algorithm symbol",
+			args:       args{
+				header: `md 5=`,
+			},
+			want:       ParsedDigestHeader{},
+			wantErr:    true,
+			wantErrMsg: "found ' ' — unsupported symbol in algorithm",
+		},
+		{
+			name:       "Empty digest value",
+			args:       args{
+				header: `MD5=`,
+			},
+			want:       ParsedDigestHeader{},
+			wantErr:    true,
+			wantErrMsg: "empty digest value",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			var got, err = p.ParseDigestHeader(tt.args.header)
+			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+		})
+	}
+}
+
+func assertParser(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
 	if e, ok := err.(*ParserError); err != nil && ok == false {
-		t.Errorf(name + "\n unexpected error type %v", e)
+		t.Errorf(name+"\n unexpected error type %v", e)
 	}
 	if err != nil && err.Error() != wantErrMsg {
-		t.Errorf(name + "\n error message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
+		t.Errorf(name+"\n error message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
 	}
 	if (err != nil) != wantErr {
-		t.Errorf(name + "\n error = `%v`, wantErr %v", err, wantErr)
+		t.Errorf(name+"\n error = `%v`, wantErr %v", err, wantErr)
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf(name + "\n got  = %v,\nwant = %v", got, want)
+		t.Errorf(name+"\n got  = %v,\nwant = %v", got, want)
 	}
 }

@@ -19,16 +19,23 @@ var space byte = 32 // space
 var div byte = 44   // ,
 var from0 byte = 48 // 0
 var to9 byte = 57   // 9
+var min byte = 45   // -
 
-// ParsedHeader header parsed into params
+// ParsedHeader Authorization or Signature header parsed into params
 type ParsedHeader struct {
 	keyword   string
 	keyID     string
 	algorithm string
 	created   time.Time
-	expires   time.Time // Not implemented: "Subsecod precision is allowed using decimal notation."
+	expires   time.Time // Not implemented: "Subsecond precision is allowed using decimal notation."
 	headers   []string
 	signature string
+}
+
+// ParsedDigestHeader Digest header parsed into params (algo & digest)
+type ParsedDigestHeader struct {
+	algo   string
+	digest string
 }
 
 // ParserError errors during parsing
@@ -47,35 +54,42 @@ func (e *ParserError) Error() string {
 
 // Parser parser internal struct
 type Parser struct {
-	header  string
-	result  ParsedHeader
-	keyword []byte
-	key     []byte
-	value   []byte
-	flag    string
-	params  map[string]bool
+	header             string
+	parsedHeader       ParsedHeader
+	parsedDigestHeader ParsedDigestHeader
+	keyword            []byte
+	key                []byte
+	value              []byte
+	flag               string
+	params             map[string]bool
 }
 
-// New create new parser
-func New() *Parser {
+// NewParser create new parser
+func NewParser() *Parser {
 	p := new(Parser)
 	p.params = make(map[string]bool)
 	return p
 }
 
-// ParseAuthorization parse Authorization header
-func (p *Parser) ParseAuthorization(header string) (ParsedHeader, error) {
+// ParseAuthorizationHeader parse Authorization header
+func (p *Parser) ParseAuthorizationHeader(header string) (ParsedHeader, error) {
 	p.flag = "keyword"
-	return p.parse(header)
+	return p.parseSignature(header)
 }
 
-// ParseSignature parse Signature header
-func (p *Parser) ParseSignature(header string) (ParsedHeader, error) {
+// ParseSignatureHeader parse Signature header
+func (p *Parser) ParseSignatureHeader(header string) (ParsedHeader, error) {
 	p.flag = "param"
-	return p.parse(header)
+	return p.parseSignature(header)
 }
 
-func (p *Parser) parse(header string) (ParsedHeader, error) {
+// ParseDigestHeader parse Digest header
+func (p *Parser) ParseDigestHeader(header string) (ParsedDigestHeader, error) {
+	p.flag = "algorithm"
+	return p.parseDigest(header)
+}
+
+func (p *Parser) parseSignature(header string) (ParsedHeader, error) {
 	if len(header) == 0 {
 		return ParsedHeader{}, &ParserError{"empty header", nil}
 	}
@@ -85,7 +99,7 @@ func (p *Parser) parse(header string) (ParsedHeader, error) {
 	for {
 		_, err := r.Read(b)
 		if err == io.EOF {
-			err = p.handleEOF()
+			err = p.handleSignatureEOF()
 			if err != nil {
 				return ParsedHeader{}, err
 			}
@@ -124,10 +138,47 @@ func (p *Parser) parse(header string) (ParsedHeader, error) {
 		}
 	}
 
-	return p.result, nil
+	return p.parsedHeader, nil
 }
 
-func (p *Parser) handleEOF() error {
+func (p *Parser) parseDigest(header string) (ParsedDigestHeader, error) {
+	if len(header) == 0 {
+		return ParsedDigestHeader{}, &ParserError{"empty digest header", nil}
+	}
+
+	r := strings.NewReader(header)
+	b := make([]byte, 1)
+	for {
+		_, err := r.Read(b)
+		if err == io.EOF {
+			err = p.handleDigestEOF()
+			if err != nil {
+				return ParsedDigestHeader{}, err
+			}
+			break
+		}
+
+		cur := b[0]
+		switch p.flag {
+		case "algorithm":
+			err = p.parseAlgorithm(cur)
+			break
+		case "stringRawValue":
+			err = p.parseStringRawValue(cur)
+			break
+		default:
+			err = &ParserError{"unexpected parser stage", nil}
+
+		}
+		if err != nil {
+			return ParsedDigestHeader{}, err
+		}
+	}
+
+	return p.parsedDigestHeader, nil
+}
+
+func (p *Parser) handleSignatureEOF() error {
 	var err error
 	switch p.flag {
 	case "keyword":
@@ -150,8 +201,18 @@ func (p *Parser) handleEOF() error {
 		err = &ParserError{"unexpected end of header, expected '\"' symbol", nil}
 		break
 	case "intValue":
-		err = p.set()
+		err = p.setKeyValue()
 		break
+	}
+	return err
+}
+
+func (p *Parser) handleDigestEOF() error {
+	var err error
+	if p.flag == "algorithm" {
+		err = &ParserError{"unexpected end of header, expected digest value", nil}
+	} else if p.flag == "stringRawValue" {
+		err = p.setDigest()
 	}
 	return err
 }
@@ -183,6 +244,22 @@ func (p *Parser) parseKey(cur byte) error {
 	} else if cur != space {
 		return &ParserError{
 			fmt.Sprintf("found '%s' — unsupported symbol in key", string(cur)),
+			nil,
+		}
+	}
+	return nil
+}
+
+func (p *Parser) parseAlgorithm(cur byte) error {
+	if (cur >= fromA && cur <= toZ) ||
+		(cur >= froma && cur <= toz) ||
+		(cur >= from0 && cur <= to9) || cur == min {
+		p.key = append(p.key, cur)
+	} else if cur == equal {
+		p.flag = "stringRawValue"
+	} else {
+		return &ParserError{
+			fmt.Sprintf("found '%s' — unsupported symbol in algorithm", string(cur)),
 			nil,
 		}
 	}
@@ -227,7 +304,7 @@ func (p *Parser) parseStringValue(cur byte) error {
 		p.value = append(p.value, cur)
 	} else if cur == quote {
 		p.flag = "div"
-		if err := p.set(); err != nil {
+		if err := p.setKeyValue(); err != nil {
 			return err
 		}
 	}
@@ -242,15 +319,20 @@ func (p *Parser) parseIntValue(cur byte) error {
 			return nil
 		}
 		p.flag = "div"
-		if err := p.set(); err != nil {
+		if err := p.setKeyValue(); err != nil {
 			return err
 		}
 	} else if cur == div {
 		p.flag = "param"
-		if err := p.set(); err != nil {
+		if err := p.setKeyValue(); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+func (p *Parser) parseStringRawValue(cur byte) error {
+	p.value = append(p.value, cur)
 	return nil
 }
 
@@ -283,11 +365,11 @@ func (p *Parser) setKeyword() error {
 			nil,
 		}
 	}
-	p.result.keyword = "Signature"
+	p.parsedHeader.keyword = "Signature"
 	return nil
 }
 
-func (p *Parser) set() error {
+func (p *Parser) setKeyValue() error {
 	k := string(p.key)
 
 	if len(p.value) == 0 {
@@ -306,21 +388,21 @@ func (p *Parser) set() error {
 	p.params[k] = true
 
 	if k == "keyID" {
-		p.result.keyID = string(p.value)
+		p.parsedHeader.keyID = string(p.value)
 	} else if k == "algorithm" {
-		p.result.algorithm = string(p.value)
+		p.parsedHeader.algorithm = string(p.value)
 	} else if k == "headers" {
-		p.result.headers = strings.Fields(string(p.value))
+		p.parsedHeader.headers = strings.Fields(string(p.value))
 	} else if k == "signature" {
-		p.result.signature = string(p.value)
+		p.parsedHeader.signature = string(p.value)
 	} else if k == "created" {
 		var err error
-		if p.result.created, err = p.intToTime(p.value); err != nil {
+		if p.parsedHeader.created, err = p.intToTime(p.value); err != nil {
 			return &ParserError{"wrong 'created' param value", err}
 		}
 	} else if k == "expires" {
 		var err error
-		if p.result.expires, err = p.intToTime(p.value); err != nil {
+		if p.parsedHeader.expires, err = p.intToTime(p.value); err != nil {
 			return &ParserError{"wrong 'expires' param value", err}
 		}
 	}
@@ -338,4 +420,21 @@ func (p *Parser) intToTime(v []byte) (time.Time, error) {
 		return time.Unix(0, 0), err
 	}
 	return time.Unix(sec, 0), nil
+}
+
+func (p *Parser) setDigest() error {
+	if len(p.value) == 0 {
+		return &ParserError{
+			"empty digest value",
+			nil,
+		}
+	}
+
+	p.parsedDigestHeader.algo = strings.ToUpper(string(p.key))
+	p.parsedDigestHeader.digest = string(p.value)
+
+	p.key = nil
+	p.value = nil
+
+	return nil
 }
