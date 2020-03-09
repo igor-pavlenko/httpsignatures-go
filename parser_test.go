@@ -698,8 +698,8 @@ func TestParserParseDigestHeader(t *testing.T) {
 			wantErrMsg: "empty digest header",
 		},
 		{
-			name:       "Empty Digest value",
-			args:       args{
+			name: "Empty Digest value",
+			args: args{
 				header: `md5`,
 			},
 			want:       ParsedDigestHeader{},
@@ -707,8 +707,8 @@ func TestParserParseDigestHeader(t *testing.T) {
 			wantErrMsg: "unexpected end of header, expected digest value",
 		},
 		{
-			name:       "Unsupported digest algorithm symbol",
-			args:       args{
+			name: "Unsupported digest algorithm symbol",
+			args: args{
 				header: `md 5=`,
 			},
 			want:       ParsedDigestHeader{},
@@ -716,8 +716,8 @@ func TestParserParseDigestHeader(t *testing.T) {
 			wantErrMsg: "found ' ' — unsupported symbol in algorithm",
 		},
 		{
-			name:       "Empty digest value",
-			args:       args{
+			name: "Empty digest value",
+			args: args{
 				header: `MD5=`,
 			},
 			want:       ParsedDigestHeader{},
