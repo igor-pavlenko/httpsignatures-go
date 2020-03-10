@@ -11,6 +11,12 @@ import (
 const digestBodyExample = `{"hello": "world"}`
 const digestHostExample = "https://example.com"
 
+var getRequestFunc = func(b string, h string) *http.Request {
+	r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(b))
+	r.Header.Set("Digest", h)
+	return r
+}
+
 func TestVerifyDigest(t *testing.T) {
 	type args struct {
 		r *http.Request
@@ -26,63 +32,35 @@ func TestVerifyDigest(t *testing.T) {
 		{
 			name: "Valid MD5 digest",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
-					r.Header.Set("Digest", "MD5=Sd/dVLAcvNLSq16eXua5uQ==")
-					return r
-				})(),
+				r: getRequestFunc(digestBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
 			},
 			want:       true,
-			wantErr:    false,
-			wantErrMsg: "",
 		},
 		{
 			name: "Valid SHA-1 digest",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
-					r.Header.Set("Digest", "SHA-1=07CavjDP4u3/TungoUHJO/Wzr4c=")
-					return r
-				})(),
+				r: getRequestFunc(digestBodyExample, "SHA-1=07CavjDP4u3/TungoUHJO/Wzr4c="),
 			},
 			want:       true,
-			wantErr:    false,
-			wantErrMsg: "",
 		},
 		{
 			name: "Valid SHA-256 digest",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
-					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
-					return r
-				})(),
+				r: getRequestFunc(digestBodyExample, "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
 			},
 			want:       true,
-			wantErr:    false,
-			wantErrMsg: "",
 		},
 		{
 			name: "Valid SHA-512 digest",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
-					r.Header.Set("Digest", "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew==")
-					return r
-				})(),
+				r: getRequestFunc(digestBodyExample, "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew=="),
 			},
 			want:       true,
-			wantErr:    false,
-			wantErrMsg: "",
 		},
 		{
 			name: "Invalid MD5 digest",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
-					r.Header.Set("Digest", "MD5=123456")
-					return r
-				})(),
+				r: getRequestFunc(digestBodyExample, "MD5=123456"),
 			},
 			want:       false,
 			wantErr:    true,
@@ -91,11 +69,7 @@ func TestVerifyDigest(t *testing.T) {
 		{
 			name: "Invalid digest header",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
-					r.Header.Set("Digest", "SHA-512=")
-					return r
-				})(),
+				r: getRequestFunc(digestBodyExample, "SHA-512="),
 			},
 			want:       false,
 			wantErr:    true,
@@ -104,11 +78,7 @@ func TestVerifyDigest(t *testing.T) {
 		{
 			name: "Unsupported digest hash algorithm",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
-					r.Header.Set("Digest", "SHA-0=test")
-					return r
-				})(),
+				r: getRequestFunc(digestBodyExample, "SHA-0=test"),
 			},
 			want:       false,
 			wantErr:    true,
@@ -117,24 +87,39 @@ func TestVerifyDigest(t *testing.T) {
 		{
 			name: "Empty body",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, nil)
-					r.Header.Set("Digest", "MD5=Sd/dVLAcvNLSq16eXua5uQ==")
-					return r
-				})(),
+				r: getRequestFunc("", "MD5=xxx"),
 			},
 			want:       false,
 			wantErr:    true,
 			wantErrMsg: "empty body",
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := NewDigest()
+			got, err := d.VerifyDigest(tt.args.r)
+			assertDigest(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+		})
+	}
+}
+
+
+func TestVerifyDigestCustomAlgorithm(t *testing.T) {
+	type args struct {
+		r *http.Request
+		o DigestOption
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       bool
+		wantErr    bool
+		wantErrMsg string
+	}{
 		{
 			name: "Custom hash algorithm",
 			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
-					r.Header.Set("Digest", "SHA-256-SALT=Io9cYUVmytq+9dkc8zPPG22x1tJgxIGAtc+6ntuDgLE=")
-					return r
-				})(),
+				r: getRequestFunc(digestBodyExample, "SHA-256-SALT=Io9cYUVmytq+9dkc8zPPG22x1tJgxIGAtc+6ntuDgLE="),
 				o: DigestOption{
 					Algorithm: "SHA-256-SALT",
 					Hash: func(b []byte) []byte {
@@ -154,22 +139,24 @@ func TestVerifyDigest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := NewDigest()
-			if tt.args.o.Algorithm != "" {
-				d.SetOptions([]DigestOption{tt.args.o})
-			}
+			d.SetOptions([]DigestOption{tt.args.o})
 			got, err := d.VerifyDigest(tt.args.r)
-			if e, ok := err.(*DigestError); err != nil && ok == false {
-				t.Errorf(tt.name+"\nunexpected error type %v", e)
-			}
-			if err != nil && err.Error() != tt.wantErrMsg {
-				t.Errorf(tt.name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), tt.wantErrMsg)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf(tt.name+"\nerror = `%v`, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
+			assertDigest(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
+	}
+}
+
+func assertDigest(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
+	if e, ok := err.(*DigestError); err != nil && ok == false {
+		t.Errorf(name+"\nunexpected error type %v", e)
+	}
+	if err != nil && err.Error() != wantErrMsg {
+		t.Errorf(name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
+	}
+	if (err != nil) != wantErr {
+		t.Errorf(name+"\nerror = `%v`, wantErr %v", err, wantErr)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf(name+"\ngot  = %v,\nwant = %v", got, want)
 	}
 }
