@@ -9,6 +9,7 @@ import (
 )
 
 const digestBodyExample = `{"hello": "world"}`
+const digestHostExample = "https://example.com"
 
 func TestVerifyDigest(t *testing.T) {
 	type args struct {
@@ -26,7 +27,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Valid MD5 digest",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(digestBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
 					r.Header.Set("Digest", "MD5=Sd/dVLAcvNLSq16eXua5uQ==")
 					return r
 				})(),
@@ -39,7 +40,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Valid SHA-1 digest",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(digestBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
 					r.Header.Set("Digest", "SHA-1=07CavjDP4u3/TungoUHJO/Wzr4c=")
 					return r
 				})(),
@@ -52,7 +53,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Valid SHA-256 digest",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(digestBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
 					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
 					return r
 				})(),
@@ -65,7 +66,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Valid SHA-512 digest",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(digestBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
 					r.Header.Set("Digest", "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew==")
 					return r
 				})(),
@@ -78,7 +79,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Invalid MD5 digest",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(digestBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
 					r.Header.Set("Digest", "MD5=123456")
 					return r
 				})(),
@@ -91,7 +92,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Invalid digest header",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(digestBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
 					r.Header.Set("Digest", "SHA-512=")
 					return r
 				})(),
@@ -104,7 +105,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Unsupported digest hash algorithm",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(digestBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
 					r.Header.Set("Digest", "SHA-0=test")
 					return r
 				})(),
@@ -117,7 +118,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Empty body",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", nil)
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, nil)
 					r.Header.Set("Digest", "MD5=Sd/dVLAcvNLSq16eXua5uQ==")
 					return r
 				})(),
@@ -130,7 +131,7 @@ func TestVerifyDigest(t *testing.T) {
 			name: "Custom hash algorithm",
 			args: args{
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(digestBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(digestBodyExample))
 					r.Header.Set("Digest", "SHA-256-SALT=Io9cYUVmytq+9dkc8zPPG22x1tJgxIGAtc+6ntuDgLE=")
 					return r
 				})(),
