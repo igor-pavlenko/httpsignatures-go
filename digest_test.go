@@ -34,28 +34,28 @@ func TestVerifyDigest(t *testing.T) {
 			args: args{
 				r: getRequestFunc(digestBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
 			},
-			want:       true,
+			want: true,
 		},
 		{
 			name: "Valid SHA-1 digest",
 			args: args{
 				r: getRequestFunc(digestBodyExample, "SHA-1=07CavjDP4u3/TungoUHJO/Wzr4c="),
 			},
-			want:       true,
+			want: true,
 		},
 		{
 			name: "Valid SHA-256 digest",
 			args: args{
 				r: getRequestFunc(digestBodyExample, "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
 			},
-			want:       true,
+			want: true,
 		},
 		{
 			name: "Valid SHA-512 digest",
 			args: args{
 				r: getRequestFunc(digestBodyExample, "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew=="),
 			},
-			want:       true,
+			want: true,
 		},
 		{
 			name: "Invalid MD5 digest",
@@ -102,7 +102,6 @@ func TestVerifyDigest(t *testing.T) {
 		})
 	}
 }
-
 
 func TestVerifyDigestCustomAlgorithm(t *testing.T) {
 	type args struct {
