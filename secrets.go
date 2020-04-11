@@ -22,6 +22,7 @@ type Secrets interface {
 // Secret struct to return/store secret
 type Secret struct {
 	KeyID      string
+	PublicKey  string
 	PrivateKey string
 	Algorithm  string
 }

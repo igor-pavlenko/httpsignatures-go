@@ -1,6 +1,7 @@
 package httpsignatures
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -9,11 +10,13 @@ func TestNewSecretsStorage(t *testing.T) {
 	storageExample := map[string]Secret{
 		"k1": {
 			KeyID:      "k1",
+			PublicKey:  "PublicKey1",
 			PrivateKey: "PrivateKey1",
 			Algorithm:  "md5",
 		},
 		"k2": {
 			KeyID:      "k2",
+			PublicKey:  "PublicKey2",
 			PrivateKey: "PrivateKey2",
 			Algorithm:  "sha1",
 		},
@@ -54,6 +57,7 @@ func TestSecretsStorageGet(t *testing.T) {
 	storageExample := map[string]Secret{
 		"k1": {
 			KeyID:      "k1",
+			PublicKey:  "PublicKey1",
 			PrivateKey: "PrivateKey1",
 			Algorithm:  "md5",
 		},
@@ -94,6 +98,17 @@ func TestSecretsStorageGet(t *testing.T) {
 			got, err := s.Get(tt.args.keyID)
 			assertSecrets(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
+	}
+}
+
+func TestSecretsError(t *testing.T) {
+	err := errors.New("test err")
+	e := SecretError{"secret err", err}
+
+	wantErrMsg := "secret err: test err"
+
+	if e.Error() != wantErrMsg {
+		t.Errorf("error message = `%s`, wantErrMsg = `%s`", e.Error(), wantErrMsg)
 	}
 }
 

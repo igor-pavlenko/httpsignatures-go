@@ -9,30 +9,32 @@ import (
 )
 
 // ASCII codes
-var fromA byte = 65 // A
-var toZ byte = 90   // z
-var froma byte = 97 // a
-var toz byte = 122  // z
-var equal byte = 61 // =
-var quote byte = 34 // "
-var space byte = 32 // space
-var div byte = 44   // ,
-var from0 byte = 48 // 0
-var to9 byte = 57   // 9
-var min byte = 45   // -
+const (
+	fromA byte = 65  // A
+	toZ   byte = 90  // z
+	froma byte = 97  // a
+	toz   byte = 122 // z
+	equal byte = 61  // =
+	quote byte = 34  // "
+	space byte = 32  // space
+	div   byte = 44  // ,
+	from0 byte = 48  // 0
+	to9   byte = 57  // 9
+	min   byte = 45  // -
+)
 
 // ParsedHeader Authorization or Signature header parsed into params
 type ParsedHeader struct {
 	keyword   string
-	keyID     string
-	algorithm string
-	created   time.Time
-	expires   time.Time // Not implemented: "Subsecond precision is allowed using decimal notation."
-	headers   []string
-	signature string
+	keyID     string    // REQUIRED
+	signature string    // REQUIRED
+	algorithm string    // RECOMMENDED
+	created   time.Time // RECOMMENDED
+	expires   time.Time // OPTIONAL (Not implemented: "Subsecond precision is allowed using decimal notation.")
+	headers   []string  // OPTIONAL
 }
 
-// ParsedDigestHeader Digest header parsed into params (algo & digest)
+// ParsedDigestHeader Digest header parsed into params (alg & digest)
 type ParsedDigestHeader struct {
 	algo   string
 	digest string
@@ -136,6 +138,12 @@ func (p *Parser) parseSignature(header string) (ParsedHeader, error) {
 		if err != nil {
 			return ParsedHeader{}, err
 		}
+	}
+
+	// 2.1.6 If not specified, implementations MUST operate as if the field were specified with a
+	// single value, `(created)`, in the list of HTTP headers.
+	if len(p.parsedHeader.headers) == 0 {
+		p.parsedHeader.headers = append(p.parsedHeader.headers, "(created)")
 	}
 
 	return p.parsedHeader, nil
@@ -380,6 +388,8 @@ func (p *Parser) setKeyValue() error {
 	}
 
 	if p.params[k] == true {
+		// 2.2 If any of the parameters listed above are erroneously duplicated in the associated header field,
+		// then the the signature MUST NOT be processed.
 		return &ParserError{
 			fmt.Sprintf("duplicate param '%s'", k),
 			nil,
@@ -387,7 +397,7 @@ func (p *Parser) setKeyValue() error {
 	}
 	p.params[k] = true
 
-	if k == "keyID" {
+	if k == "keyId" {
 		p.parsedHeader.keyID = string(p.value)
 	} else if k == "algorithm" {
 		p.parsedHeader.algorithm = string(p.value)
@@ -406,6 +416,8 @@ func (p *Parser) setKeyValue() error {
 			return &ParserError{"wrong 'expires' param value", err}
 		}
 	}
+
+	// 2.2 Any parameter that is not recognized as a parameter, or is not well-formed, MUST be ignored.
 
 	p.key = nil
 	p.value = nil
@@ -437,4 +449,22 @@ func (p *Parser) setDigest() error {
 	p.value = nil
 
 	return nil
+}
+
+func (p *Parser) VerifySignatureFields() (bool, error) {
+	if p.parsedHeader.keyID == "" {
+		return false, &ParserError{
+			"keyId is not set in header",
+			nil,
+		}
+	}
+
+	if p.parsedHeader.signature == "" {
+		return false, &ParserError{
+			"signature is not set in header",
+			nil,
+		}
+	}
+
+	return true, nil
 }
