@@ -19,7 +19,7 @@ var getDigestRequestFunc = func(b string, h string) *http.Request {
 type testAlg struct{}
 
 func (a testAlg) Algorithm() string {
-	return "testAlg"
+	return "TEST"
 }
 
 func (a testAlg) Create(data []byte) ([]byte, error) {
@@ -119,21 +119,6 @@ func TestVerifyDigest(t *testing.T) {
 	}
 }
 
-func assertDigest(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
-	if e, ok := err.(*DigestError); err != nil && ok == false {
-		t.Errorf(name+"\nunexpected error type %v", e)
-	}
-	if err != nil && err.Error() != wantErrMsg {
-		t.Errorf(name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
-	}
-	if (err != nil) != wantErr {
-		t.Errorf(name+"\nerror = `%v`, wantErr %v", err, wantErr)
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf(name+"\ngot  = %v,\nwant = %v", got, want)
-	}
-}
-
 func TestDigest_SetDigestHashAlgorithm(t *testing.T) {
 	tests := []struct {
 		name string
@@ -148,9 +133,24 @@ func TestDigest_SetDigestHashAlgorithm(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := NewDigest()
 			d.SetDigestHashAlgorithm(tt.arg)
-			if _, ok := d.alg["testAlg"]; ok == false {
+			if _, ok := d.alg["TEST"]; ok == false {
 				t.Error("algorithm not found")
 			}
 		})
+	}
+}
+
+func assertDigest(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
+	if e, ok := err.(*DigestError); err != nil && ok == false {
+		t.Errorf(name+"\nunexpected error type %v", e)
+	}
+	if err != nil && err.Error() != wantErrMsg {
+		t.Errorf(name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
+	}
+	if (err != nil) != wantErr {
+		t.Errorf(name+"\nerror = `%v`, wantErr %v", err, wantErr)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf(name+"\ngot  = %v,\nwant = %v", got, want)
 	}
 }

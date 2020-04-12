@@ -163,7 +163,7 @@ func TestRsaSha256Verify(t *testing.T) {
 			},
 			want:       false,
 			wantErr:    true,
-			wantErrMsg: "wrong signature: crypto/rsa: verification error",
+			wantErrMsg: "error verify signature: crypto/rsa: verification error",
 		},
 		{
 			name: "RSA-SHA256 no public key found",
