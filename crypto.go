@@ -1,6 +1,6 @@
 package httpsignatures
 
-// Crypto interface to create/verify Signature using secret keys
+// SignatureHashAlgorithm interface to create/verify Signature using secret keys
 // Algorithm return algorithm name
 // Create create new signature
 // Verify verify passed signature
@@ -10,6 +10,7 @@ type SignatureHashAlgorithm interface {
 	Verify(secret Secret, data []byte, signature []byte) error
 }
 
+// DigestHashAlgorithm interface to create/verify digest HMAC hash
 type DigestHashAlgorithm interface {
 	Algorithm() string
 	Create(data []byte) ([]byte, error)

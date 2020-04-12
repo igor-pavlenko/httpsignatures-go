@@ -26,7 +26,7 @@ func TestNewHttpSignatures(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       args
-		want       *HttpSignatures
+		want       *HTTPSignatures
 		wantErr    bool
 		wantErrMsg string
 	}{
@@ -35,8 +35,8 @@ func TestNewHttpSignatures(t *testing.T) {
 			args: args{
 				ss: ss,
 			},
-			want: (func() *HttpSignatures {
-				hs := new(HttpSignatures)
+			want: (func() *HTTPSignatures {
+				hs := new(HTTPSignatures)
 				hs.ss = ss
 				hs.d = NewDigest()
 				return hs
@@ -45,8 +45,8 @@ func TestNewHttpSignatures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewHttpSignatures(tt.args.ss)
-			if reflect.TypeOf(got).String() != "*httpsignatures.HttpSignatures" {
+			got := NewHTTPSignatures(tt.args.ss)
+			if reflect.TypeOf(got).String() != "*httpsignatures.HTTPSignatures" {
 				t.Errorf(tt.name+"\ngot wrong type: got=%s", reflect.TypeOf(got).String())
 			}
 		})
@@ -91,7 +91,7 @@ func TestIsAlgoHasPrefix(t *testing.T) {
 			want: false,
 		},
 	}
-	hs := NewHttpSignatures(NewSecretsStorage(map[string]Secret{}))
+	hs := NewHTTPSignatures(NewSecretsStorage(map[string]Secret{}))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := hs.isAlgoHasPrefix(tt.args.alg)
@@ -274,7 +274,7 @@ func TestBuildSignatureString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hs := NewHttpSignatures(ss)
+			hs := NewHTTPSignatures(ss)
 			got, err := hs.buildSignatureString(tt.args.ph, tt.args.r)
 			assertHttpsignatures(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
@@ -358,7 +358,7 @@ func TestVerifySignature(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hs := NewHttpSignatures(ss)
+			hs := NewHTTPSignatures(ss)
 			err := hs.VerifySignature(tt.args.r)
 			got := err == nil
 			assertHttpsignatures(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
@@ -367,7 +367,7 @@ func TestVerifySignature(t *testing.T) {
 }
 
 func assertHttpsignatures(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
-	if e, ok := err.(*HttpSignaturesError); err != nil && ok == false {
+	if e, ok := err.(*Error); err != nil && ok == false {
 		t.Errorf(name+"\nunexpected error type %v", e)
 	}
 	if err != nil && err.Error() != wantErrMsg {

@@ -7,7 +7,7 @@ import (
 
 const algoMd5 = "MD5"
 
-// MD5 MD5 Algorithm
+// Md5 MD5 Algorithm
 type Md5 struct{}
 
 // Algorithm Return algorithm name

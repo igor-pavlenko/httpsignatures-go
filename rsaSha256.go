@@ -12,7 +12,7 @@ import (
 
 const algoRsaSha256 = "RSA-SHA256"
 
-// SignatureHashRsaSha256 RSA-SHA265 Algorithm
+// RsaSha256 RSA-SHA265 Algorithm
 type RsaSha256 struct{}
 
 // Algorithm Return algorithm name

@@ -451,6 +451,7 @@ func (p *Parser) setDigest() error {
 	return nil
 }
 
+// VerifySignatureFields verify required fields
 func (p *Parser) VerifySignatureFields() error {
 	if p.parsedHeader.keyID == "" {
 		return &ParserError{

@@ -18,28 +18,30 @@ const (
 	expires             = "(expires)"
 )
 
-// HttpSignaturesError errors during validating or creating Signature|Authorization
-type HttpSignaturesError struct {
+// Error errors during validating or creating Signature|Authorization
+type Error struct {
 	Message string
 	Err     error
 }
 
 // Error error message
-func (e *HttpSignaturesError) Error() string {
+func (e *Error) Error() string {
 	if e.Err != nil {
 		return e.Message + ": " + e.Err.Error()
 	}
 	return e.Message
 }
 
-type HttpSignatures struct {
+// HTTPSignatures struct
+type HTTPSignatures struct {
 	ss  *SecretsStorage
 	d   *Digest
 	alg map[string]SignatureHashAlgorithm
 }
 
-func NewHttpSignatures(ss *SecretsStorage) *HttpSignatures {
-	hs := new(HttpSignatures)
+// NewHTTPSignatures Constructor
+func NewHTTPSignatures(ss *SecretsStorage) *HTTPSignatures {
+	hs := new(HTTPSignatures)
 	hs.ss = ss
 	hs.d = NewDigest()
 	hs.alg = map[string]SignatureHashAlgorithm{
@@ -50,48 +52,51 @@ func NewHttpSignatures(ss *SecretsStorage) *HttpSignatures {
 	return hs
 }
 
-func (hs *HttpSignatures) SetDigestAlgorithm(a DigestHashAlgorithm) {
+// SetDigestAlgorithm set custom digest hash algorithm
+func (hs *HTTPSignatures) SetDigestAlgorithm(a DigestHashAlgorithm) {
 	hs.d.SetDigestHashAlgorithm(a)
 }
 
-func (hs *HttpSignatures) SetSignatureAlgorithm(a SignatureHashAlgorithm) {
+// SetSignatureAlgorithm set custom signature hash algorithm
+func (hs *HTTPSignatures) SetSignatureAlgorithm(a SignatureHashAlgorithm) {
 	hs.alg[strings.ToUpper(a.Algorithm())] = a
 }
 
-func (hs *HttpSignatures) VerifySignature(r *http.Request) error {
+// VerifySignature Verify signature
+func (hs *HTTPSignatures) VerifySignature(r *http.Request) error {
 	// Check signature header
 	h := r.Header.Get(signatureHeader)
 	if len(h) == 0 {
-		return &HttpSignaturesError{"signature header not found", nil}
+		return &Error{"signature header not found", nil}
 	}
 
 	// Parse header
 	p := NewParser()
 	ph, err := p.ParseSignatureHeader(h)
 	if err != nil {
-		return &HttpSignaturesError{"parser error", err}
+		return &Error{"parser error", err}
 	}
 
 	// Verify required fields in signature header
 	err = p.VerifySignatureFields()
 	if err != nil {
-		return &HttpSignaturesError{"signature header validation error", err}
+		return &Error{"signature header validation error", err}
 	}
 
 	// Check keyID & algorithm
 	secret, err := hs.ss.Get(ph.keyID)
 	if err != nil {
-		return &HttpSignaturesError{fmt.Sprintf("keyID '%s' not found", ph.keyID), err}
+		return &Error{fmt.Sprintf("keyID '%s' not found", ph.keyID), err}
 	}
 	if strings.ToUpper(secret.Algorithm) != strings.ToUpper(ph.algorithm) {
-		return &HttpSignaturesError{
+		return &Error{
 			fmt.Sprintf("wrong algorithm '%s' for keyID '%s'", ph.algorithm, ph.keyID),
 			nil,
 		}
 	}
 	alg, ok := hs.alg[strings.ToUpper(secret.Algorithm)]
 	if ok == false {
-		return &HttpSignaturesError{
+		return &Error{
 			fmt.Sprintf("algorithm '%s' not supported", ph.algorithm),
 			nil,
 		}
@@ -106,44 +111,47 @@ func (hs *HttpSignatures) VerifySignature(r *http.Request) error {
 	// Create signature string
 	sigStr, err := hs.buildSignatureString(ph, r)
 	if err != nil {
-		return &HttpSignaturesError{"build signature string error", err}
+		return &Error{"build signature string error", err}
 	}
 	if len(sigStr) == 0 {
-		return &HttpSignaturesError{"empty string for signature", nil}
+		return &Error{"empty string for signature", nil}
 	}
 
 	// Verify signature
 	signatureDecoded, err := base64.StdEncoding.DecodeString(ph.signature)
 	if err != nil {
-		return &HttpSignaturesError{
+		return &Error{
 			"error decode signature from base64",
 			err,
 		}
 	}
 	err = alg.Verify(secret, sigStr, signatureDecoded)
 	if err != nil {
-		return &HttpSignaturesError{"wrong signature", err}
+		return &Error{"wrong signature", err}
 	}
 
 	return nil
 }
 
-func (hs *HttpSignatures) VerifyAuthorization(r http.Request) error {
+// VerifyAuthorization verify authorization signature
+func (hs *HTTPSignatures) VerifyAuthorization(r http.Request) error {
 
 	return nil
 }
 
-func (hs *HttpSignatures) AddAuthorization(s Secret, r http.Request) error {
+// AddAuthorization add authorization header
+func (hs *HTTPSignatures) AddAuthorization(s Secret, r http.Request) error {
 
 	return nil
 }
 
-func (hs *HttpSignatures) AddSignature(s Secret, r http.Request) error {
+// AddSignature add signature header
+func (hs *HTTPSignatures) AddSignature(s Secret, r http.Request) error {
 
 	return nil
 }
 
-func (hs *HttpSignatures) buildSignatureString(ph ParsedHeader, r *http.Request) ([]byte, error) {
+func (hs *HTTPSignatures) buildSignatureString(ph ParsedHeader, r *http.Request) ([]byte, error) {
 	j := len(ph.headers)
 	headers := r.Header.Clone()
 	var b bytes.Buffer
@@ -157,13 +165,13 @@ func (hs *HttpSignatures) buildSignatureString(ph ParsedHeader, r *http.Request)
 			if hs.isAlgoHasPrefix(ph.algorithm) == true && j == 1 {
 				// 2.3.2 If the header field name is `(created)` and the `algorithm`  parameter starts with
 				// `rsa`, `hmac`, or `ecdsa` an implementation MUST produce an error.
-				return nil, &HttpSignaturesError{
+				return nil, &Error{
 					fmt.Sprintf("param '%s' and algorithm '%s'", created, ph.algorithm),
 					nil,
 				}
 			}
 			if ph.created == time.Unix(0, 0) {
-				return nil, &HttpSignaturesError{
+				return nil, &Error{
 					fmt.Sprintf("param '%s', required in signature, not found", created),
 					nil,
 				}
@@ -173,13 +181,13 @@ func (hs *HttpSignatures) buildSignatureString(ph ParsedHeader, r *http.Request)
 			if hs.isAlgoHasPrefix(ph.algorithm) == true && j == 1 {
 				// 2.3.3 If the header field name is `(expires)` and the `algorithm` parameter starts with
 				// `rsa`, `hmac`, or `ecdsa` an implementation MUST produce an error.
-				return nil, &HttpSignaturesError{
+				return nil, &Error{
 					fmt.Sprintf("param '%s' and algorithm '%s'", expires, ph.algorithm),
 					nil,
 				}
 			}
 			if ph.expires == time.Unix(0, 0) {
-				return nil, &HttpSignaturesError{
+				return nil, &Error{
 					fmt.Sprintf("param '%s', required in signature, not found", expires),
 					nil,
 				}
@@ -192,7 +200,7 @@ func (hs *HttpSignatures) buildSignatureString(ph ParsedHeader, r *http.Request)
 			// an ASCII colon `:`, and an ASCII space ` `.
 			reqHeader, ok := headers[textproto.CanonicalMIMEHeaderKey(h)]
 			if ok == false {
-				return nil, &HttpSignaturesError{
+				return nil, &Error{
 					fmt.Sprintf("header '%s', required in signature, not found", h),
 					nil,
 				}
@@ -207,7 +215,7 @@ func (hs *HttpSignatures) buildSignatureString(ph ParsedHeader, r *http.Request)
 	return b.Bytes(), nil
 }
 
-func (hs *HttpSignatures) isAlgoHasPrefix(algo string) bool {
+func (hs *HTTPSignatures) isAlgoHasPrefix(algo string) bool {
 	a := []string{`rsa`, `hmac`, `ecdsa`}
 	algo = strings.ToLower(algo)
 	for _, v := range a {
@@ -219,12 +227,12 @@ func (hs *HttpSignatures) isAlgoHasPrefix(algo string) bool {
 	return false
 }
 
-func (hs *HttpSignatures) verifyDigest(ph []string, r *http.Request) error {
+func (hs *HTTPSignatures) verifyDigest(ph []string, r *http.Request) error {
 	for _, h := range ph {
 		if h == "digest" {
 			err := hs.d.Verify(r)
 			if err != nil {
-				return &HttpSignaturesError{"digest verification error", err}
+				return &Error{"digest verification error", err}
 			}
 			break
 		}

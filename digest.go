@@ -46,7 +46,7 @@ func (d *Digest) SetDigestHashAlgorithm(a DigestHashAlgorithm) {
 	d.alg[strings.ToUpper(a.Algorithm())] = a
 }
 
-// VerifyDigest verify digest header (compare with real request body hash)
+// Verify verify digest header (compare with real request body hash)
 func (d *Digest) Verify(r *http.Request) error {
 	var err error
 
