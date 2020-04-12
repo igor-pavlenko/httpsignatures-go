@@ -830,7 +830,8 @@ func TestVerifySignatureFields(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser()
 			p.ParseSignatureHeader(tt.args.header)
-			got, err := p.VerifySignatureFields()
+			err := p.VerifySignatureFields()
+			got := err == nil
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}

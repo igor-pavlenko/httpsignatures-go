@@ -451,20 +451,20 @@ func (p *Parser) setDigest() error {
 	return nil
 }
 
-func (p *Parser) VerifySignatureFields() (bool, error) {
+func (p *Parser) VerifySignatureFields() error {
 	if p.parsedHeader.keyID == "" {
-		return false, &ParserError{
+		return &ParserError{
 			"keyId is not set in header",
 			nil,
 		}
 	}
 
 	if p.parsedHeader.signature == "" {
-		return false, &ParserError{
+		return &ParserError{
 			"signature is not set in header",
 			nil,
 		}
 	}
 
-	return true, nil
+	return nil
 }

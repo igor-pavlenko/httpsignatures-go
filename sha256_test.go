@@ -16,7 +16,7 @@ func TestSha256Algorithm(t *testing.T) {
 
 func TestSha256Create(t *testing.T) {
 	type args struct {
-		data   []byte
+		data []byte
 	}
 	tests := []struct {
 		name       string

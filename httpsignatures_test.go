@@ -282,7 +282,6 @@ func TestBuildSignatureString(t *testing.T) {
 }
 
 func TestVerifySignature(t *testing.T) {
-	t.Skip("skipping test for now")
 	ss := NewSecretsStorage(map[string]Secret{
 		"Test": {
 			KeyID:      "Test",
@@ -317,19 +316,38 @@ func TestVerifySignature(t *testing.T) {
 			wantErrMsg: "signature header not found",
 		},
 		{
-			name: "Valid signature",
+			name: "Valid signature basic test",
 			args: args{
 				r: (func() *http.Request {
 					r, _ := http.NewRequest(
 						http.MethodPost,
 						httpsignaturesHostExampleFull,
 						strings.NewReader(httpsignaturesBodyExample))
-					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date content-type digest content-length",signature="vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`)
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="(request-target) host date",signature="qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdKFYRqzic+efkb3nndiv/x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0="`)
 					r.Header.Set("Host", "example.com")
 					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
 					r.Header.Set("Content-Type", "application/json")
+					return r
+				})(),
+			},
+			want:       true,
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "Valid signature all headers test",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						httpsignaturesHostExampleFull,
+						strings.NewReader(httpsignaturesBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date content-type digest content-length",signature="nAkCW0wg9AbbStQRLi8fsS1mPPnA6S5+/0alANcoDFG9hG0bJ8NnMRcB1Sz1eccNMzzLEke7nGXqoiJYZFfT81oaRqh/MNFwQVX4OZvTLZ5xVZQuchRkOSO7b2QX0aFWFOUq6dnwAyliHrp6w3FOxwkGGJPaerw2lOYLdC/Bejk="`)
+					r.Header.Set("Host", "example.com")
+					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
 					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
-					r.Header.Set("Content-Length", "18")
+					r.Header.Set("Content-Type", "application/json")
+					r.Header.Set("Content-length", "18")
 					return r
 				})(),
 			},
@@ -341,7 +359,8 @@ func TestVerifySignature(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hs := NewHttpSignatures(ss)
-			got, err := hs.VerifySignature(tt.args.r)
+			err := hs.VerifySignature(tt.args.r)
+			got := err == nil
 			assertHttpsignatures(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}

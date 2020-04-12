@@ -16,6 +16,20 @@ var getDigestRequestFunc = func(b string, h string) *http.Request {
 	return r
 }
 
+type testAlg struct{}
+
+func (a testAlg) Algorithm() string {
+	return "testAlg"
+}
+
+func (a testAlg) Create(data []byte) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (a testAlg) Verify(data []byte, digest []byte) error {
+	return nil
+}
+
 func TestVerifyDigest(t *testing.T) {
 	type args struct {
 		r *http.Request
@@ -50,13 +64,22 @@ func TestVerifyDigest(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "Invalid MD5 digest",
+			name: "Invalid MD5 digest (decode error)",
 			args: args{
 				r: getDigestRequestFunc(digestBodyExample, "MD5=123456"),
 			},
 			want:       false,
 			wantErr:    true,
 			wantErrMsg: "error decode digest from base64: illegal base64 data at input byte 4",
+		},
+		{
+			name: "Invalid MD5 wrong digest",
+			args: args{
+				r: getDigestRequestFunc(digestBodyExample, "MD5=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
+			},
+			want:       false,
+			wantErr:    true,
+			wantErrMsg: "wrong digest: wrong hash",
 		},
 		{
 			name: "Invalid digest header",
@@ -89,12 +112,12 @@ func TestVerifyDigest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := NewDigest()
-			got, err := d.VerifyDigest(tt.args.r)
+			err := d.Verify(tt.args.r)
+			got := err == nil
 			assertDigest(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
-
 
 func assertDigest(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
 	if e, ok := err.(*DigestError); err != nil && ok == false {
@@ -108,5 +131,26 @@ func assertDigest(t *testing.T, got interface{}, err error, name string, want in
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf(name+"\ngot  = %v,\nwant = %v", got, want)
+	}
+}
+
+func TestDigest_SetDigestHashAlgorithm(t *testing.T) {
+	tests := []struct {
+		name string
+		arg  DigestHashAlgorithm
+	}{
+		{
+			name: "Set new algorithm OK",
+			arg:  testAlg{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := NewDigest()
+			d.SetDigestHashAlgorithm(tt.arg)
+			if _, ok := d.alg["testAlg"]; ok == false {
+				t.Error("algorithm not found")
+			}
+		})
 	}
 }

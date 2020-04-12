@@ -152,7 +152,7 @@ func TestRsaSha256Verify(t *testing.T) {
 		{
 			name: "RSA-SHA256 wrong signature",
 			args: args{
-				sig: "MTIz",
+				sig:  "MTIz",
 				data: []byte("test"),
 				secret: Secret{
 					KeyID:      "key3",
@@ -202,7 +202,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			want:       false,
 			wantErr:    true,
 			wantErrMsg: "error ParsePKIXPublicKey: asn1: syntax error: data truncated",
-		},{
+		}, {
 			name: "RSA-SHA256 unknown type of public key",
 			args: args{
 				data: []byte{},

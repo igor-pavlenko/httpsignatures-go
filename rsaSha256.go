@@ -75,7 +75,7 @@ func (a RsaSha256) Verify(secret Secret, data []byte, signature []byte) error {
 	h.Write(data)
 	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, h.Sum(nil), signature)
 	if err != nil {
-		return &CryptoError{"wrong signature", err}
+		return &CryptoError{"error verify signature", err}
 	}
 	return nil
 }

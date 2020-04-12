@@ -16,7 +16,7 @@ func TestSha512Algorithm(t *testing.T) {
 
 func TestSha512Create(t *testing.T) {
 	type args struct {
-		data   []byte
+		data []byte
 	}
 	tests := []struct {
 		name       string

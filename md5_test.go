@@ -16,7 +16,7 @@ func TestMd5Algorithm(t *testing.T) {
 
 func TestMd5Create(t *testing.T) {
 	type args struct {
-		data   []byte
+		data []byte
 	}
 	tests := []struct {
 		name       string

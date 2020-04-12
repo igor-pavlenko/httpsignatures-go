@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // DigestError errors during digest verification
@@ -32,39 +33,36 @@ type Digest struct {
 // NewDigest create new digest
 func NewDigest() *Digest {
 	d := new(Digest)
-	md5 := Md5{}
-	sha256 := Sha256{}
-	sha512 := Sha512{}
 	d.alg = map[string]DigestHashAlgorithm{
-		md5.Algorithm(): md5,
-		sha256.Algorithm(): sha256,
-		sha512.Algorithm(): sha512,
+		algoMd5:    Md5{},
+		algoSha256: Sha256{},
+		algoSha512: Sha512{},
 	}
 	return d
 }
 
 // SetDigestHashAlgorithm set digest options (add new digest hash algorithm)
 func (d *Digest) SetDigestHashAlgorithm(a DigestHashAlgorithm) {
-	d.alg[a.Algorithm()] = a
+	d.alg[strings.ToUpper(a.Algorithm())] = a
 }
 
 // VerifyDigest verify digest header (compare with real request body hash)
-func (d *Digest) VerifyDigest(r *http.Request) (bool, error) {
+func (d *Digest) Verify(r *http.Request) error {
 	var err error
 
 	header := r.Header.Get("digest")
 	p := NewParser()
 	d.parsedDigestHeader, err = p.ParseDigestHeader(header)
 	if err != nil {
-		return false, &DigestError{
+		return &DigestError{
 			"digest parser error",
 			err,
 		}
 	}
 
-	h, ok := d.alg[d.parsedDigestHeader.algo]
+	h, ok := d.alg[strings.ToUpper(d.parsedDigestHeader.algo)]
 	if ok == false {
-		return false, &DigestError{
+		return &DigestError{
 			fmt.Sprintf("unsupported digest hash algorithm '%s'", d.parsedDigestHeader.algo),
 			nil,
 		}
@@ -72,25 +70,25 @@ func (d *Digest) VerifyDigest(r *http.Request) (bool, error) {
 
 	b, err := d.readBody(r)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	digest, err := base64.StdEncoding.DecodeString(d.parsedDigestHeader.digest)
 	if err != nil {
-		return false, &DigestError{
+		return &DigestError{
 			"error decode digest from base64",
 			err,
 		}
 	}
 	err = h.Verify(b, digest)
 	if err != nil {
-		return false, &DigestError{
+		return &DigestError{
 			"wrong digest",
 			err,
 		}
 	}
 
-	return true, nil
+	return nil
 }
 
 func (d *Digest) readBody(r *http.Request) ([]byte, error) {
