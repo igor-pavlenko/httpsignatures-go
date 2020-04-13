@@ -24,10 +24,7 @@ func (a Md5) Create(data []byte) ([]byte, error) {
 
 // Verify Verify hash
 func (a Md5) Verify(data []byte, digest []byte) error {
-	expected, err := a.Create(data)
-	if err != nil {
-		return err
-	}
+	expected, _ := a.Create(data)
 	if subtle.ConstantTimeCompare(digest, expected) != 1 {
 		return &CryptoError{"wrong hash", nil}
 	}

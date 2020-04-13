@@ -24,10 +24,7 @@ func (a Sha512) Create(data []byte) ([]byte, error) {
 
 // Verify Verify hash
 func (a Sha512) Verify(data []byte, digest []byte) error {
-	expected, err := a.Create(data)
-	if err != nil {
-		return err
-	}
+	expected, _ := a.Create(data)
 	if subtle.ConstantTimeCompare(digest, expected) != 1 {
 		return &CryptoError{"wrong hash", nil}
 	}
