@@ -145,4 +145,3 @@ func TestDigestSetDigestHashAlgorithm(t *testing.T) {
 		})
 	}
 }
-
