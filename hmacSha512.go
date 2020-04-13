@@ -21,7 +21,10 @@ func (a HmacSha512) Create(secret Secret, data []byte) ([]byte, error) {
 		return nil, &CryptoError{"no private key found", nil}
 	}
 	mac := hmac.New(sha512.New, []byte(secret.PrivateKey))
-	mac.Write(data)
+	_, err := mac.Write(data)
+	if err != nil {
+		return nil, &CryptoError{"error creating signature", err}
+	}
 	return mac.Sum(nil), nil
 }
 
