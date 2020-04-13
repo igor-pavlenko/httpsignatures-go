@@ -2,7 +2,6 @@ package httpsignatures
 
 import (
 	"net/http"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -31,16 +30,18 @@ func (a testAlg) Verify(data []byte, digest []byte) error {
 }
 
 func TestVerifyDigest(t *testing.T) {
+	var cryptoErrType = "*httpsignatures.DigestError"
 	type args struct {
 		r *http.Request
 		o DigestHashAlgorithm
 	}
 	tests := []struct {
-		name       string
-		args       args
-		want       bool
-		wantErr    bool
-		wantErrMsg string
+		name        string
+		args        args
+		want        bool
+		wantErr     bool
+		wantErrType string
+		wantErrMsg  string
 	}{
 		{
 			name: "Valid MD5 digest",
@@ -68,45 +69,50 @@ func TestVerifyDigest(t *testing.T) {
 			args: args{
 				r: getDigestRequestFunc(digestBodyExample, "MD5=123456"),
 			},
-			want:       false,
-			wantErr:    true,
-			wantErrMsg: "error decode digest from base64: illegal base64 data at input byte 4",
+			want:        false,
+			wantErr:     true,
+			wantErrType: cryptoErrType,
+			wantErrMsg:  "error decode digest from base64: illegal base64 data at input byte 4",
 		},
 		{
 			name: "Invalid MD5 wrong digest",
 			args: args{
 				r: getDigestRequestFunc(digestBodyExample, "MD5=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
 			},
-			want:       false,
-			wantErr:    true,
-			wantErrMsg: "wrong digest: wrong hash",
+			want:        false,
+			wantErr:     true,
+			wantErrType: cryptoErrType,
+			wantErrMsg:  "wrong digest: wrong hash",
 		},
 		{
 			name: "Invalid digest header",
 			args: args{
 				r: getDigestRequestFunc(digestBodyExample, "SHA-512="),
 			},
-			want:       false,
-			wantErr:    true,
-			wantErrMsg: "digest parser error: empty digest value",
+			want:        false,
+			wantErr:     true,
+			wantErrType: cryptoErrType,
+			wantErrMsg:  "digest parser error: empty digest value",
 		},
 		{
 			name: "Unsupported digest hash algorithm",
 			args: args{
 				r: getDigestRequestFunc(digestBodyExample, "SHA-0=test"),
 			},
-			want:       false,
-			wantErr:    true,
-			wantErrMsg: "unsupported digest hash algorithm 'SHA-0'",
+			want:        false,
+			wantErr:     true,
+			wantErrType: cryptoErrType,
+			wantErrMsg:  "unsupported digest hash algorithm 'SHA-0'",
 		},
 		{
 			name: "Empty body",
 			args: args{
 				r: getDigestRequestFunc("", "MD5=xxx"),
 			},
-			want:       false,
-			wantErr:    true,
-			wantErrMsg: "empty body",
+			want:        false,
+			wantErr:     true,
+			wantErrType: cryptoErrType,
+			wantErrMsg:  "empty body",
 		},
 	}
 	for _, tt := range tests {
@@ -114,12 +120,12 @@ func TestVerifyDigest(t *testing.T) {
 			d := NewDigest()
 			err := d.Verify(tt.args.r)
 			got := err == nil
-			assertDigest(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
 		})
 	}
 }
 
-func TestDigest_SetDigestHashAlgorithm(t *testing.T) {
+func TestDigestSetDigestHashAlgorithm(t *testing.T) {
 	tests := []struct {
 		name string
 		arg  DigestHashAlgorithm
@@ -140,17 +146,3 @@ func TestDigest_SetDigestHashAlgorithm(t *testing.T) {
 	}
 }
 
-func assertDigest(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
-	if e, ok := err.(*DigestError); err != nil && ok == false {
-		t.Errorf(name+"\nunexpected error type %v", e)
-	}
-	if err != nil && err.Error() != wantErrMsg {
-		t.Errorf(name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
-	}
-	if (err != nil) != wantErr {
-		t.Errorf(name+"\nerror = `%v`, wantErr %v", err, wantErr)
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf(name+"\ngot  = %v,\nwant = %v", got, want)
-	}
-}
