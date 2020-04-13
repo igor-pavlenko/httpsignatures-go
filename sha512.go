@@ -18,10 +18,7 @@ func (a Sha512) Algorithm() string {
 // Create Create hash
 func (a Sha512) Create(data []byte) ([]byte, error) {
 	h := sha512.New()
-	_, err := h.Write(data)
-	if err != nil {
-		return nil, &CryptoError{"error creating hash", err}
-	}
+	h.Write(data)
 	return h.Sum(nil), nil
 }
 

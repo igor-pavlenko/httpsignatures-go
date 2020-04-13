@@ -18,10 +18,7 @@ func (a Md5) Algorithm() string {
 // Create Create hash
 func (a Md5) Create(data []byte) ([]byte, error) {
 	h := md5.New()
-	_, err := h.Write(data)
-	if err != nil {
-		return nil, &CryptoError{"error creating hash", err}
-	}
+	h.Write(data)
 	return h.Sum(nil), nil
 }
 

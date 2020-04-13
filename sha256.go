@@ -18,10 +18,7 @@ func (a Sha256) Algorithm() string {
 // Create Create hash
 func (a Sha256) Create(data []byte) ([]byte, error) {
 	h := sha256.New()
-	_, err := h.Write(data)
-	if err != nil {
-		return nil, &CryptoError{"error creating hash", err}
-	}
+	h.Write(data)
 	return h.Sum(nil), nil
 }
 
