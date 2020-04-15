@@ -25,7 +25,6 @@ func (e *DigestError) Error() string {
 
 // Digest digest internal struct
 type Digest struct {
-	header             string
 	parsedDigestHeader ParsedDigestHeader
 	alg                map[string]DigestHashAlgorithm
 }
@@ -61,7 +60,7 @@ func (d *Digest) Verify(r *http.Request) error {
 	}
 
 	h, ok := d.alg[strings.ToUpper(d.parsedDigestHeader.algo)]
-	if ok == false {
+	if !ok {
 		return &DigestError{
 			fmt.Sprintf("unsupported digest hash algorithm '%s'", d.parsedDigestHeader.algo),
 			nil,

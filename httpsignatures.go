@@ -12,7 +12,7 @@ import (
 
 const (
 	signatureHeader     = "Signature"
-	authorizationHeader = "Authorization"
+	// authorizationHeader = "Authorization"
 	requestTarget       = "(request-target)"
 	created             = "(created)"
 	expires             = "(expires)"
@@ -88,14 +88,14 @@ func (hs *HTTPSignatures) VerifySignature(r *http.Request) error {
 	if err != nil {
 		return &Error{fmt.Sprintf("keyID '%s' not found", ph.keyID), err}
 	}
-	if strings.ToUpper(secret.Algorithm) != strings.ToUpper(ph.algorithm) {
+	if !strings.EqualFold(secret.Algorithm, ph.algorithm) {
 		return &Error{
 			fmt.Sprintf("wrong algorithm '%s' for keyID '%s'", ph.algorithm, ph.keyID),
 			nil,
 		}
 	}
 	alg, ok := hs.alg[strings.ToUpper(secret.Algorithm)]
-	if ok == false {
+	if !ok {
 		return &Error{
 			fmt.Sprintf("algorithm '%s' not supported", ph.algorithm),
 			nil,
@@ -162,7 +162,7 @@ func (hs *HTTPSignatures) buildSignatureString(ph ParsedHeader, r *http.Request)
 			// and not to the :path pseudo-header.
 			b.WriteString(fmt.Sprintf("%s: %s %s", requestTarget, strings.ToLower(r.Method), r.URL.RequestURI()))
 		case created:
-			if hs.isAlgoHasPrefix(ph.algorithm) == true && j == 1 {
+			if hs.isAlgoHasPrefix(ph.algorithm) && j == 1 {
 				// 2.3.2 If the header field name is `(created)` and the `algorithm`  parameter starts with
 				// `rsa`, `hmac`, or `ecdsa` an implementation MUST produce an error.
 				return nil, &Error{
@@ -178,7 +178,7 @@ func (hs *HTTPSignatures) buildSignatureString(ph ParsedHeader, r *http.Request)
 			}
 			b.WriteString(fmt.Sprintf("%s: %d", created, ph.created.Unix()))
 		case expires:
-			if hs.isAlgoHasPrefix(ph.algorithm) == true && j == 1 {
+			if hs.isAlgoHasPrefix(ph.algorithm) && j == 1 {
 				// 2.3.3 If the header field name is `(expires)` and the `algorithm` parameter starts with
 				// `rsa`, `hmac`, or `ecdsa` an implementation MUST produce an error.
 				return nil, &Error{
@@ -199,7 +199,7 @@ func (hs *HTTPSignatures) buildSignatureString(ph ParsedHeader, r *http.Request)
 			// the signature string line correlating with that header will simply be the (lowercased) header name,
 			// an ASCII colon `:`, and an ASCII space ` `.
 			reqHeader, ok := headers[textproto.CanonicalMIMEHeaderKey(h)]
-			if ok == false {
+			if !ok {
 				return nil, &Error{
 					fmt.Sprintf("header '%s', required in signature, not found", h),
 					nil,

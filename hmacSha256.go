@@ -34,7 +34,7 @@ func (a HmacSha256) Verify(secret Secret, data []byte, signature []byte) error {
 	if err != nil {
 		return err
 	}
-	if hmac.Equal(signature, expected) == false {
+	if !hmac.Equal(signature, expected) {
 		return &CryptoError{"wrong signature", nil}
 	}
 	return nil

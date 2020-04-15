@@ -829,7 +829,7 @@ func TestVerifySignatureFields(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser()
-			p.ParseSignatureHeader(tt.args.header)
+			_, _ = p.ParseSignatureHeader(tt.args.header)
 			err := p.VerifySignatureFields()
 			got := err == nil
 			assertParser(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)

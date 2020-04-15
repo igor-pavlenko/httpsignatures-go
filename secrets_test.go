@@ -64,7 +64,6 @@ func TestSecretsStorageGet(t *testing.T) {
 	}
 	type args struct {
 		keyID  string
-		secret Secret
 	}
 	tests := []struct {
 		name       string

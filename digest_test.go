@@ -33,7 +33,6 @@ func TestVerifyDigest(t *testing.T) {
 	var cryptoErrType = "*httpsignatures.DigestError"
 	type args struct {
 		r *http.Request
-		o DigestHashAlgorithm
 	}
 	tests := []struct {
 		name        string

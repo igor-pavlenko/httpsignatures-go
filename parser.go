@@ -56,7 +56,6 @@ func (e *ParserError) Error() string {
 
 // Parser parser internal struct
 type Parser struct {
-	header             string
 	parsedHeader       ParsedHeader
 	parsedDigestHeader ParsedDigestHeader
 	keyword            []byte
@@ -112,25 +111,18 @@ func (p *Parser) parseSignature(header string) (ParsedHeader, error) {
 		switch p.flag {
 		case "keyword":
 			err = p.parseKeyword(cur)
-			break
 		case "param":
 			err = p.parseKey(cur)
-			break
 		case "equal":
 			err = p.parseEqual(cur)
-			break
 		case "quote":
 			err = p.parseQuote(cur)
-			break
 		case "stringValue":
 			err = p.parseStringValue(cur)
-			break
 		case "intValue":
 			err = p.parseIntValue(cur)
-			break
 		case "div":
 			err = p.parseDiv(cur)
-			break
 		default:
 			err = &ParserError{"unexpected parser stage", nil}
 
@@ -170,10 +162,8 @@ func (p *Parser) parseDigest(header string) (ParsedDigestHeader, error) {
 		switch p.flag {
 		case "algorithm":
 			err = p.parseAlgorithm(cur)
-			break
 		case "stringRawValue":
 			err = p.parseStringRawValue(cur)
-			break
 		default:
 			err = &ParserError{"unexpected parser stage", nil}
 
@@ -191,26 +181,20 @@ func (p *Parser) handleSignatureEOF() error {
 	switch p.flag {
 	case "keyword":
 		err = p.setKeyword()
-		break
 	case "param":
 		if len(p.key) == 0 {
 			err = &ParserError{"unexpected end of header, expected parameter", nil}
 		} else {
 			err = &ParserError{"unexpected end of header, expected '=' symbol and field value", nil}
 		}
-		break
 	case "equal":
 		err = &ParserError{"unexpected end of header, expected field value", nil}
-		break
 	case "quote":
 		err = &ParserError{"unexpected end of header, expected '\"' symbol and field value", nil}
-		break
 	case "stringValue":
 		err = &ParserError{"unexpected end of header, expected '\"' symbol", nil}
-		break
 	case "intValue":
 		err = p.setKeyValue()
-		break
 	}
 	return err
 }
@@ -387,7 +371,7 @@ func (p *Parser) setKeyValue() error {
 		}
 	}
 
-	if p.params[k] == true {
+	if p.params[k] {
 		// 2.2 If any of the parameters listed above are erroneously duplicated in the associated header field,
 		// then the the signature MUST NOT be processed.
 		return &ParserError{
