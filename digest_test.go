@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+const digestErrType = "*httpsignatures.DigestError"
 const digestBodyExample = `{"hello": "world"}`
 const digestHostExample = "https://example.com"
 
@@ -30,7 +31,6 @@ func (a testAlg) Verify(data []byte, digest []byte) error {
 }
 
 func TestVerifyDigest(t *testing.T) {
-	var cryptoErrType = "*httpsignatures.DigestError"
 	type args struct {
 		r *http.Request
 	}
@@ -38,7 +38,6 @@ func TestVerifyDigest(t *testing.T) {
 		name        string
 		args        args
 		want        bool
-		wantErr     bool
 		wantErrType string
 		wantErrMsg  string
 	}{
@@ -48,6 +47,8 @@ func TestVerifyDigest(t *testing.T) {
 				r: getDigestRequestFunc(digestBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
 			},
 			want: true,
+			wantErrType: digestErrType,
+			wantErrMsg: "",
 		},
 		{
 			name: "Valid SHA-256 digest",
@@ -55,6 +56,7 @@ func TestVerifyDigest(t *testing.T) {
 				r: getDigestRequestFunc(digestBodyExample, "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
 			},
 			want: true,
+			wantErrType: digestErrType,
 		},
 		{
 			name: "Valid SHA-512 digest",
@@ -62,6 +64,7 @@ func TestVerifyDigest(t *testing.T) {
 				r: getDigestRequestFunc(digestBodyExample, "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew=="),
 			},
 			want: true,
+			wantErrType: digestErrType,
 		},
 		{
 			name: "Invalid MD5 digest (decode error)",
@@ -69,9 +72,8 @@ func TestVerifyDigest(t *testing.T) {
 				r: getDigestRequestFunc(digestBodyExample, "MD5=123456"),
 			},
 			want:        false,
-			wantErr:     true,
-			wantErrType: cryptoErrType,
-			wantErrMsg:  "error decode digest from base64: illegal base64 data at input byte 4",
+			wantErrType: digestErrType,
+			wantErrMsg:  "DigestError: error decode digest from base64: illegal base64 data at input byte 4",
 		},
 		{
 			name: "Invalid MD5 wrong digest",
@@ -79,9 +81,8 @@ func TestVerifyDigest(t *testing.T) {
 				r: getDigestRequestFunc(digestBodyExample, "MD5=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
 			},
 			want:        false,
-			wantErr:     true,
-			wantErrType: cryptoErrType,
-			wantErrMsg:  "wrong digest: wrong hash",
+			wantErrType: digestErrType,
+			wantErrMsg:  "DigestError: wrong digest: CryptoError: wrong hash",
 		},
 		{
 			name: "Invalid digest header",
@@ -89,9 +90,8 @@ func TestVerifyDigest(t *testing.T) {
 				r: getDigestRequestFunc(digestBodyExample, "SHA-512="),
 			},
 			want:        false,
-			wantErr:     true,
-			wantErrType: cryptoErrType,
-			wantErrMsg:  "digest parser error: empty digest value",
+			wantErrType: parserErrType,
+			wantErrMsg:  "ParserError: empty digest value",
 		},
 		{
 			name: "Unsupported digest hash algorithm",
@@ -99,9 +99,8 @@ func TestVerifyDigest(t *testing.T) {
 				r: getDigestRequestFunc(digestBodyExample, "SHA-0=test"),
 			},
 			want:        false,
-			wantErr:     true,
-			wantErrType: cryptoErrType,
-			wantErrMsg:  "unsupported digest hash algorithm 'SHA-0'",
+			wantErrType: digestErrType,
+			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'SHA-0'",
 		},
 		{
 			name: "Empty body",
@@ -109,9 +108,8 @@ func TestVerifyDigest(t *testing.T) {
 				r: getDigestRequestFunc("", "MD5=xxx"),
 			},
 			want:        false,
-			wantErr:     true,
-			wantErrType: cryptoErrType,
-			wantErrMsg:  "empty body",
+			wantErrType: digestErrType,
+			wantErrMsg:  "DigestError: empty body",
 		},
 	}
 	for _, tt := range tests {
@@ -119,7 +117,7 @@ func TestVerifyDigest(t *testing.T) {
 			d := NewDigest()
 			err := d.Verify(tt.args.r)
 			got := err == nil
-			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }

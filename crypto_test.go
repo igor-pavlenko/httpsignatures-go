@@ -70,7 +70,6 @@ func TestHashAlgorithmCreate(t *testing.T) {
 		name        string
 		args        args
 		want        string
-		wantErr     bool
 		wantErrType string
 		wantErrMsg  string
 	}{
@@ -81,7 +80,6 @@ func TestHashAlgorithmCreate(t *testing.T) {
 				data: []byte(hashData),
 			},
 			want:        "5eb63bbbe01eeed093cb22bb8f5acdc3",
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -92,7 +90,6 @@ func TestHashAlgorithmCreate(t *testing.T) {
 				data: []byte(hashData),
 			},
 			want:        "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -103,7 +100,6 @@ func TestHashAlgorithmCreate(t *testing.T) {
 				data: []byte(hashData),
 			},
 			want:        "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f",
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -113,7 +109,7 @@ func TestHashAlgorithmCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.args.alg.Create(tt.args.data)
 			digest := hex.EncodeToString(got)
-			assert(t, digest, err, tt.wantErrType, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, digest, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
@@ -128,7 +124,6 @@ func TestHashAlgorithmVerify(t *testing.T) {
 		name        string
 		args        args
 		want        bool
-		wantErr     bool
 		wantErrType string
 		wantErrMsg  string
 	}{
@@ -149,9 +144,8 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(hashData),
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "wrong hash",
+			wantErrMsg:  "CryptoError: wrong hash",
 		},
 		{
 			name: "Sha256 verify ok",
@@ -161,7 +155,6 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(hashData),
 			},
 			want:        true,
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -173,9 +166,8 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(hashData),
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "wrong hash",
+			wantErrMsg:  "CryptoError: wrong hash",
 		},
 		{
 			name: "Sha512 verify ok",
@@ -185,7 +177,6 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(hashData),
 			},
 			want:        true,
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -197,9 +188,8 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(hashData),
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "wrong hash",
+			wantErrMsg:  "CryptoError: wrong hash",
 		},
 	}
 
@@ -208,7 +198,7 @@ func TestHashAlgorithmVerify(t *testing.T) {
 			b, _ := hex.DecodeString(tt.args.digest)
 			err := tt.args.alg.Verify(tt.args.data, b)
 			got := err == nil
-			assert(t, got, err, cryptoErrType, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
@@ -254,7 +244,6 @@ func TestHmacAlgorithmCreate(t *testing.T) {
 		name        string
 		args        args
 		want        string
-		wantErr     bool
 		wantErrType string
 		wantErrMsg  string
 	}{
@@ -269,7 +258,6 @@ func TestHmacAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "7lksEgztUSEk34sJ8vGQpE0i+UK+ZexCQ0L8HpHBBJY=",
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -281,9 +269,8 @@ func TestHmacAlgorithmCreate(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        "",
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "no private key found",
+			wantErrMsg:  "CryptoError: no private key found",
 		},
 		{
 			name: "HMAC-SHA512 create ok",
@@ -296,7 +283,6 @@ func TestHmacAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "xhrfZlhd8heV7O4w1nPbNRYdWSc2Qg8RuruZ5jDDHbVzSgd4NQOePJWN5xIKz74U/HhlLe138G8VLcH5atTZTg==",
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -308,9 +294,8 @@ func TestHmacAlgorithmCreate(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        "",
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "no private key found",
+			wantErrMsg:  "CryptoError: no private key found",
 		},
 		{
 			name: "RSA-SHA256 create ok",
@@ -329,7 +314,6 @@ func TestHmacAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdKFYRqzic+efkb3nndiv/x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0=",
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -341,9 +325,8 @@ func TestHmacAlgorithmCreate(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        "",
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "no private key found",
+			wantErrMsg:  "CryptoError: no private key found",
 		},
 		{
 			name: "RSA-SHA256 unsupported key type",
@@ -356,9 +339,8 @@ func TestHmacAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "",
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "unsupported key type SSH PRIVATE KEY",
+			wantErrMsg:  "CryptoError: unsupported key type SSH PRIVATE KEY",
 		},
 		{
 			name: "RSA-SHA256 error ParsePKCS1PrivateKey",
@@ -372,9 +354,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        "",
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "error ParsePKCS1PrivateKey: asn1: syntax error: data truncated",
+			wantErrMsg:  "CryptoError: error ParsePKCS1PrivateKey: asn1: syntax error: data truncated",
 		},
 	}
 
@@ -382,7 +363,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.args.alg.Create(tt.args.secret, tt.args.data)
 			sig := base64.StdEncoding.EncodeToString(got)
-			assert(t, sig, err, cryptoErrType, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, sig, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
@@ -398,7 +379,6 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 		name        string
 		args        args
 		want        bool
-		wantErr     bool
 		wantErrType string
 		wantErrMsg  string
 	}{
@@ -414,7 +394,6 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -430,9 +409,8 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "wrong signature",
+			wantErrMsg:  "CryptoError: wrong signature",
 		},
 		{
 			name: "HMAC-SHA256 no private key found",
@@ -443,9 +421,8 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "no private key found",
+			wantErrMsg:  "CryptoError: no private key found",
 		},
 		{
 			name: "HMAC-SHA512 verify ok",
@@ -459,7 +436,6 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -475,9 +451,8 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "wrong signature",
+			wantErrMsg:  "CryptoError: wrong signature",
 		},
 		{
 			name: "HMAC-SHA512 no private key found",
@@ -488,9 +463,8 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "no private key found",
+			wantErrMsg:  "CryptoError: no private key found",
 		},
 		{
 			name: "RSA-SHA256 verify ok",
@@ -510,7 +484,6 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErr:     false,
 			wantErrType: cryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -528,9 +501,8 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "error verify signature: crypto/rsa: verification error",
+			wantErrMsg:  "CryptoError: error verify signature: crypto/rsa: verification error",
 		},
 		{
 			name: "RSA-SHA256 no public key found",
@@ -541,9 +513,8 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "no public key found",
+			wantErrMsg:  "CryptoError: no public key found",
 		},
 		{
 			name: "RSA-SHA256 unsupported key type",
@@ -556,9 +527,8 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "unsupported key type NO PUBLIC KEY",
+			wantErrMsg:  "CryptoError: unsupported key type NO PUBLIC KEY",
 		},
 		{
 			name: "RSA-SHA256 error ParsePKIXPublicKey",
@@ -572,9 +542,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "error ParsePKIXPublicKey: asn1: syntax error: data truncated",
+			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
 		}, {
 			name: "RSA-SHA256 unknown type of public key",
 			args: args{
@@ -588,9 +557,8 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 				},
 			},
 			want:        false,
-			wantErr:     true,
 			wantErrType: cryptoErrType,
-			wantErrMsg:  "unknown type of public key",
+			wantErrMsg:  "CryptoError: unknown type of public key",
 		},
 	}
 
@@ -599,7 +567,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			sig, _ := base64.StdEncoding.DecodeString(tt.args.sig)
 			err := tt.args.alg.Verify(tt.args.secret, tt.args.data, sig)
 			got := err == nil
-			assert(t, got, err, "*httpsignatures.CryptoError", tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }

@@ -26,6 +26,9 @@ type Error struct {
 
 // Error error message
 func (e *Error) Error() string {
+	if e == nil {
+		return ""
+	}
 	if e.Err != nil {
 		return e.Message + ": " + e.Err.Error()
 	}
@@ -72,15 +75,15 @@ func (hs *HTTPSignatures) VerifySignature(r *http.Request) error {
 
 	// Parse header
 	p := NewParser()
-	ph, err := p.ParseSignatureHeader(h)
-	if err != nil {
-		return &Error{"parser error", err}
+	ph, pErr := p.ParseSignatureHeader(h)
+	if pErr != nil {
+		return pErr
 	}
 
 	// Verify required fields in signature header
-	err = p.VerifySignatureFields()
-	if err != nil {
-		return &Error{"signature header validation error", err}
+	pErr = p.VerifySignatureFields()
+	if pErr != nil {
+		return pErr
 	}
 
 	// Check keyID & algorithm
@@ -232,7 +235,7 @@ func (hs *HTTPSignatures) verifyDigest(ph []string, r *http.Request) error {
 		if h == "digest" {
 			err := hs.d.Verify(r)
 			if err != nil {
-				return &Error{"digest verification error", err}
+				return err
 			}
 			break
 		}

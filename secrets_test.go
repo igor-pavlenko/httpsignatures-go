@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+const secretErrType = "*httpsignatures.SecretError"
+
 func TestNewSecretsStorage(t *testing.T) {
 	storageExample := map[string]Secret{
 		"k1": {
@@ -25,11 +27,9 @@ func TestNewSecretsStorage(t *testing.T) {
 		storage map[string]Secret
 	}
 	tests := []struct {
-		name       string
-		args       args
-		want       *SecretsStorage
-		wantErr    bool
-		wantErrMsg string
+		name string
+		args args
+		want *SecretsStorage
 	}{
 		{
 			name: "Valid NewSecretsStorage",
@@ -63,23 +63,23 @@ func TestSecretsStorageGet(t *testing.T) {
 		},
 	}
 	type args struct {
-		keyID  string
+		keyID string
 	}
 	tests := []struct {
-		name       string
-		args       args
-		want       Secret
-		wantErr    bool
-		wantErrMsg string
+		name        string
+		args        args
+		want        Secret
+		wantErrType string
+		wantErrMsg  string
 	}{
 		{
 			name: "Valid SecretsStorage Get",
 			args: args{
 				keyID: "k1",
 			},
-			want:       storageExample["k1"],
-			wantErr:    false,
-			wantErrMsg: "",
+			want:        storageExample["k1"],
+			wantErrType: secretErrType,
+			wantErrMsg:  "",
 		},
 		{
 			name: "Key Not Found",
@@ -87,15 +87,15 @@ func TestSecretsStorageGet(t *testing.T) {
 				keyID: "k2",
 			},
 			want:       Secret{},
-			wantErr:    true,
-			wantErrMsg: "secret not found",
+			wantErrType: secretErrType,
+			wantErrMsg: "SecretError: secret not found",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := NewSecretsStorage(storageExample)
 			got, err := s.Get(tt.args.keyID)
-			assertSecrets(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
@@ -104,24 +104,9 @@ func TestSecretsError(t *testing.T) {
 	err := errors.New("test err")
 	e := SecretError{"secret err", err}
 
-	wantErrMsg := "secret err: test err"
+	wantErrMsg := "SecretError: secret err: test err"
 
 	if e.Error() != wantErrMsg {
 		t.Errorf("error message = `%s`, wantErrMsg = `%s`", e.Error(), wantErrMsg)
-	}
-}
-
-func assertSecrets(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
-	if e, ok := err.(*SecretError); err != nil && ok == false {
-		t.Errorf(name+"\nunexpected error type %v", e)
-	}
-	if err != nil && err.Error() != wantErrMsg {
-		t.Errorf(name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
-	}
-	if (err != nil) != wantErr {
-		t.Errorf(name+"\nerror = `%v`, wantErr %v", err, wantErr)
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf(name+"\ngot  = %v,\nwant = %v", got, want)
 	}
 }

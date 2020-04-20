@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+const httpsignaturesErrType = "*httpsignatures.Error"
 const httpsignaturesBodyExample = `{"hello": "world"}`
 const httpsignaturesHostExample = "https://example.org/foo"
 const httpsignaturesHostExampleFull = "https://example.com/foo?param=value&pet=dog"
@@ -109,11 +110,11 @@ func TestBuildSignatureString(t *testing.T) {
 		r  *http.Request
 	}
 	tests := []struct {
-		name       string
-		args       args
-		want       []byte
-		wantErr    bool
-		wantErrMsg string
+		name        string
+		args        args
+		want        []byte
+		wantErrType string
+		wantErrMsg  string
 	}{
 		{
 			name: "Valid signature string",
@@ -149,8 +150,8 @@ func TestBuildSignatureString(t *testing.T) {
 				"date: Tue, 07 Jun 2014 20:51:35 GMT\n" +
 				"digest: SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=\n" +
 				"content-length: 18"),
-			wantErr:    false,
-			wantErrMsg: "",
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "",
 		},
 		{
 			name: "Has only created header in signature & rsa algorithm",
@@ -167,9 +168,9 @@ func TestBuildSignatureString(t *testing.T) {
 					return r
 				})(),
 			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: "param '(created)' and algorithm 'rsa'",
+			want:        nil,
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "param '(created)' and algorithm 'rsa'",
 		},
 		{
 			name: "Has created header with 0 value",
@@ -186,9 +187,9 @@ func TestBuildSignatureString(t *testing.T) {
 					return r
 				})(),
 			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: "param '(created)', required in signature, not found",
+			want:        nil,
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "param '(created)', required in signature, not found",
 		},
 		{
 			name: "Has only expires header in signature & hmac_sha-1 algorithm",
@@ -205,9 +206,9 @@ func TestBuildSignatureString(t *testing.T) {
 					return r
 				})(),
 			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: "param '(expires)' and algorithm 'hmac_sha-1'",
+			want:        nil,
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "param '(expires)' and algorithm 'hmac_sha-1'",
 		},
 		{
 			name: "Has expires header with 0 value",
@@ -224,9 +225,9 @@ func TestBuildSignatureString(t *testing.T) {
 					return r
 				})(),
 			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: "param '(expires)', required in signature, not found",
+			want:        nil,
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "param '(expires)', required in signature, not found",
 		},
 		{
 			name: "Header with 0 length",
@@ -248,8 +249,8 @@ func TestBuildSignatureString(t *testing.T) {
 			want: []byte(
 				"host: example.org\n" +
 					"digest: "),
-			wantErr:    false,
-			wantErrMsg: "",
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "",
 		},
 		{
 			name: "Header not found",
@@ -267,16 +268,16 @@ func TestBuildSignatureString(t *testing.T) {
 					return r
 				})(),
 			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: "header 'digest', required in signature, not found",
+			want:        nil,
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "header 'digest', required in signature, not found",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hs := NewHTTPSignatures(ss)
 			got, err := hs.buildSignatureString(tt.args.ph, tt.args.r)
-			assertHttpsignatures(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
@@ -294,11 +295,11 @@ func TestVerifySignature(t *testing.T) {
 		r *http.Request
 	}
 	tests := []struct {
-		name       string
-		args       args
-		want       bool
-		wantErr    bool
-		wantErrMsg string
+		name        string
+		args        args
+		want        bool
+		wantErrType string
+		wantErrMsg  string
 	}{
 		{
 			name: "No Signature header",
@@ -311,9 +312,9 @@ func TestVerifySignature(t *testing.T) {
 					return r
 				})(),
 			},
-			want:       false,
-			wantErr:    true,
-			wantErrMsg: "signature header not found",
+			want:        false,
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "signature header not found",
 		},
 		{
 			name: "Valid signature basic test",
@@ -330,9 +331,9 @@ func TestVerifySignature(t *testing.T) {
 					return r
 				})(),
 			},
-			want:       true,
-			wantErr:    false,
-			wantErrMsg: "",
+			want:        true,
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "",
 		},
 		{
 			name: "Valid signature all headers test",
@@ -351,9 +352,46 @@ func TestVerifySignature(t *testing.T) {
 					return r
 				})(),
 			},
-			want:       true,
-			wantErr:    false,
-			wantErrMsg: "",
+			want:        true,
+			wantErrType: httpsignaturesErrType,
+			wantErrMsg:  "",
+		},
+		{
+			name: "Parser error",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						httpsignaturesHostExampleFull,
+						strings.NewReader(httpsignaturesBodyExample))
+					r.Header.Set("Signature", `keyId=Test"`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: parserErrType,
+			wantErrMsg:  "ParserError: found 'T' — unsupported symbol, expected '\"' or space symbol",
+		},
+		{
+			name: "Digest error",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						httpsignaturesHostExampleFull,
+						strings.NewReader(httpsignaturesBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date content-type digest content-length",signature="nAkCW0wg9AbbStQRLi8fsS1mPPnA6S5+/0alANcoDFG9hG0bJ8NnMRcB1Sz1eccNMzzLEke7nGXqoiJYZFfT81oaRqh/MNFwQVX4OZvTLZ5xVZQuchRkOSO7b2QX0aFWFOUq6dnwAyliHrp6w3FOxwkGGJPaerw2lOYLdC/Bejk="`)
+					r.Header.Set("Host", "example.com")
+					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
+					r.Header.Set("Digest", "XXX-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
+					r.Header.Set("Content-Type", "application/json")
+					r.Header.Set("Content-length", "18")
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: digestErrType,
+			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'XXX-256'",
 		},
 	}
 	for _, tt := range tests {
@@ -361,22 +399,7 @@ func TestVerifySignature(t *testing.T) {
 			hs := NewHTTPSignatures(ss)
 			err := hs.VerifySignature(tt.args.r)
 			got := err == nil
-			assertHttpsignatures(t, got, err, tt.name, tt.want, tt.wantErr, tt.wantErrMsg)
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
-	}
-}
-
-func assertHttpsignatures(t *testing.T, got interface{}, err error, name string, want interface{}, wantErr bool, wantErrMsg string) {
-	if e, ok := err.(*Error); err != nil && ok == false {
-		t.Errorf(name+"\nunexpected error type %v", e)
-	}
-	if err != nil && err.Error() != wantErrMsg {
-		t.Errorf(name+"\nerror message = `%s`, wantErrMsg = `%s`", err.Error(), wantErrMsg)
-	}
-	if (err != nil) != wantErr {
-		t.Errorf(name+"\nerror = `%v`, wantErr %v", err, wantErr)
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf(name+"\ngot =\n%v\nwant =\n%v\n", got, want)
 	}
 }

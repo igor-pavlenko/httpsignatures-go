@@ -1,5 +1,7 @@
 package httpsignatures
 
+import "fmt"
+
 // SecretError errors during retrieving secret
 type SecretError struct {
 	Message string
@@ -8,10 +10,13 @@ type SecretError struct {
 
 // Error error message
 func (e *SecretError) Error() string {
-	if e.Err != nil {
-		return e.Message + ": " + e.Err.Error()
+	if e == nil {
+		return ""
 	}
-	return e.Message
+	if e.Err != nil {
+		return fmt.Sprintf("SecretError: %s: %s", e.Message, e.Err.Error())
+	}
+	return fmt.Sprintf("SecretError: %s", e.Message)
 }
 
 // Secrets interface to retrieve secrets from storage (local, DB, file etc)

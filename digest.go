@@ -17,10 +17,13 @@ type DigestError struct {
 
 // Error error message
 func (e *DigestError) Error() string {
-	if e.Err != nil {
-		return e.Message + ": " + e.Err.Error()
+	if e == nil {
+		return ""
 	}
-	return e.Message
+	if e.Err != nil {
+		return fmt.Sprintf("DigestError: %s: %s", e.Message, e.Err.Error())
+	}
+	return fmt.Sprintf("DigestError: %s", e.Message)
 }
 
 // Digest digest internal struct
@@ -48,15 +51,14 @@ func (d *Digest) SetDigestHashAlgorithm(a DigestHashAlgorithm) {
 // Verify verify digest header (compare with real request body hash)
 func (d *Digest) Verify(r *http.Request) error {
 	var err error
+	var pErr *ParserError
+	var dErr *DigestError
 
 	header := r.Header.Get("digest")
 	p := NewParser()
-	d.parsedDigestHeader, err = p.ParseDigestHeader(header)
-	if err != nil {
-		return &DigestError{
-			"digest parser error",
-			err,
-		}
+	d.parsedDigestHeader, pErr = p.ParseDigestHeader(header)
+	if pErr != nil {
+		return pErr
 	}
 
 	h, ok := d.alg[strings.ToUpper(d.parsedDigestHeader.algo)]
@@ -67,9 +69,9 @@ func (d *Digest) Verify(r *http.Request) error {
 		}
 	}
 
-	b, err := d.readBody(r)
-	if err != nil {
-		return err
+	b, dErr := d.readBody(r)
+	if dErr != nil {
+		return dErr
 	}
 
 	digest, err := base64.StdEncoding.DecodeString(d.parsedDigestHeader.digest)
@@ -90,7 +92,7 @@ func (d *Digest) Verify(r *http.Request) error {
 	return nil
 }
 
-func (d *Digest) readBody(r *http.Request) ([]byte, error) {
+func (d *Digest) readBody(r *http.Request) ([]byte, *DigestError) {
 	if r.ContentLength == 0 {
 		return []byte{}, &DigestError{"empty body", nil}
 	}

@@ -42,16 +42,19 @@ type ParsedDigestHeader struct {
 
 // ParserError errors during parsing
 type ParserError struct {
-	Message string
-	Err     error
+	Message  string
+	Err      error
 }
 
 // Error error message
 func (e *ParserError) Error() string {
-	if e.Err != nil {
-		return e.Message + ": " + e.Err.Error()
+	if e == nil {
+		return ""
 	}
-	return e.Message
+	if e.Err != nil {
+		return fmt.Sprintf("ParserError: %s: %s", e.Message, e.Err.Error())
+	}
+	return fmt.Sprintf("ParserError: %s", e.Message)
 }
 
 // Parser parser internal struct
@@ -73,33 +76,34 @@ func NewParser() *Parser {
 }
 
 // ParseAuthorizationHeader parse Authorization header
-func (p *Parser) ParseAuthorizationHeader(header string) (ParsedHeader, error) {
+func (p *Parser) ParseAuthorizationHeader(header string) (ParsedHeader, *ParserError) {
 	p.flag = "keyword"
 	return p.parseSignature(header)
 }
 
 // ParseSignatureHeader parse Signature header
-func (p *Parser) ParseSignatureHeader(header string) (ParsedHeader, error) {
+func (p *Parser) ParseSignatureHeader(header string) (ParsedHeader, *ParserError) {
 	p.flag = "param"
 	return p.parseSignature(header)
 }
 
 // ParseDigestHeader parse Digest header
-func (p *Parser) ParseDigestHeader(header string) (ParsedDigestHeader, error) {
+func (p *Parser) ParseDigestHeader(header string) (ParsedDigestHeader, *ParserError) {
 	p.flag = "algorithm"
 	return p.parseDigest(header)
 }
 
-func (p *Parser) parseSignature(header string) (ParsedHeader, error) {
+func (p *Parser) parseSignature(header string) (ParsedHeader, *ParserError) {
 	if len(header) == 0 {
 		return ParsedHeader{}, &ParserError{"empty header", nil}
 	}
 
+	var err *ParserError
 	r := strings.NewReader(header)
 	b := make([]byte, 1)
 	for {
-		_, err := r.Read(b)
-		if err == io.EOF {
+		_, rErr := r.Read(b)
+		if rErr == io.EOF {
 			err = p.handleSignatureEOF()
 			if err != nil {
 				return ParsedHeader{}, err
@@ -141,16 +145,17 @@ func (p *Parser) parseSignature(header string) (ParsedHeader, error) {
 	return p.parsedHeader, nil
 }
 
-func (p *Parser) parseDigest(header string) (ParsedDigestHeader, error) {
+func (p *Parser) parseDigest(header string) (ParsedDigestHeader, *ParserError) {
 	if len(header) == 0 {
 		return ParsedDigestHeader{}, &ParserError{"empty digest header", nil}
 	}
 
+	var err *ParserError
 	r := strings.NewReader(header)
 	b := make([]byte, 1)
 	for {
-		_, err := r.Read(b)
-		if err == io.EOF {
+		_, rErr := r.Read(b)
+		if rErr == io.EOF {
 			err = p.handleDigestEOF()
 			if err != nil {
 				return ParsedDigestHeader{}, err
@@ -176,8 +181,8 @@ func (p *Parser) parseDigest(header string) (ParsedDigestHeader, error) {
 	return p.parsedDigestHeader, nil
 }
 
-func (p *Parser) handleSignatureEOF() error {
-	var err error
+func (p *Parser) handleSignatureEOF() *ParserError {
+	var err *ParserError
 	switch p.flag {
 	case "keyword":
 		err = p.setKeyword()
@@ -199,8 +204,8 @@ func (p *Parser) handleSignatureEOF() error {
 	return err
 }
 
-func (p *Parser) handleDigestEOF() error {
-	var err error
+func (p *Parser) handleDigestEOF() *ParserError {
+	var err *ParserError
 	if p.flag == "algorithm" {
 		err = &ParserError{"unexpected end of header, expected digest value", nil}
 	} else if p.flag == "stringRawValue" {
@@ -209,7 +214,7 @@ func (p *Parser) handleDigestEOF() error {
 	return err
 }
 
-func (p *Parser) parseKeyword(cur byte) error {
+func (p *Parser) parseKeyword(cur byte) *ParserError {
 	if (cur >= fromA && cur <= toZ) || (cur >= froma && cur <= toz) {
 		p.keyword = append(p.keyword, cur)
 	} else if cur == space && len(p.keyword) > 0 {
@@ -221,7 +226,7 @@ func (p *Parser) parseKeyword(cur byte) error {
 	return nil
 }
 
-func (p *Parser) parseKey(cur byte) error {
+func (p *Parser) parseKey(cur byte) *ParserError {
 	if (cur >= fromA && cur <= toZ) || (cur >= froma && cur <= toz) {
 		p.key = append(p.key, cur)
 	} else if cur == equal {
@@ -242,7 +247,7 @@ func (p *Parser) parseKey(cur byte) error {
 	return nil
 }
 
-func (p *Parser) parseAlgorithm(cur byte) error {
+func (p *Parser) parseAlgorithm(cur byte) *ParserError {
 	if (cur >= fromA && cur <= toZ) ||
 		(cur >= froma && cur <= toz) ||
 		(cur >= from0 && cur <= to9) || cur == min {
@@ -258,7 +263,7 @@ func (p *Parser) parseAlgorithm(cur byte) error {
 	return nil
 }
 
-func (p *Parser) parseEqual(cur byte) error {
+func (p *Parser) parseEqual(cur byte) *ParserError {
 	if cur == equal {
 		t := p.getValueType()
 		if t == "string" {
@@ -277,7 +282,7 @@ func (p *Parser) parseEqual(cur byte) error {
 	return nil
 }
 
-func (p *Parser) parseQuote(cur byte) error {
+func (p *Parser) parseQuote(cur byte) *ParserError {
 	if cur == quote {
 		p.flag = "stringValue"
 	} else if cur == space {
@@ -291,7 +296,7 @@ func (p *Parser) parseQuote(cur byte) error {
 	return nil
 }
 
-func (p *Parser) parseStringValue(cur byte) error {
+func (p *Parser) parseStringValue(cur byte) *ParserError {
 	if cur != quote {
 		p.value = append(p.value, cur)
 	} else if cur == quote {
@@ -303,7 +308,7 @@ func (p *Parser) parseStringValue(cur byte) error {
 	return nil
 }
 
-func (p *Parser) parseIntValue(cur byte) error {
+func (p *Parser) parseIntValue(cur byte) *ParserError {
 	if cur >= from0 && cur <= to9 {
 		p.value = append(p.value, cur)
 	} else if cur == space {
@@ -323,12 +328,12 @@ func (p *Parser) parseIntValue(cur byte) error {
 	return nil
 }
 
-func (p *Parser) parseStringRawValue(cur byte) error {
+func (p *Parser) parseStringRawValue(cur byte) *ParserError {
 	p.value = append(p.value, cur)
 	return nil
 }
 
-func (p *Parser) parseDiv(cur byte) error {
+func (p *Parser) parseDiv(cur byte) *ParserError {
 	if cur == div {
 		p.flag = "param"
 	} else if cur == space {
@@ -350,7 +355,7 @@ func (p *Parser) getValueType() string {
 	return "string"
 }
 
-func (p *Parser) setKeyword() error {
+func (p *Parser) setKeyword() *ParserError {
 	if "Signature" != string(p.keyword) {
 		return &ParserError{
 			"invalid Authorization header, must start from Signature keyword",
@@ -361,7 +366,7 @@ func (p *Parser) setKeyword() error {
 	return nil
 }
 
-func (p *Parser) setKeyValue() error {
+func (p *Parser) setKeyValue() *ParserError {
 	k := string(p.key)
 
 	if len(p.value) == 0 {
@@ -418,7 +423,7 @@ func (p *Parser) intToTime(v []byte) (time.Time, error) {
 	return time.Unix(sec, 0), nil
 }
 
-func (p *Parser) setDigest() error {
+func (p *Parser) setDigest() *ParserError {
 	if len(p.value) == 0 {
 		return &ParserError{
 			"empty digest value",
@@ -436,7 +441,7 @@ func (p *Parser) setDigest() error {
 }
 
 // VerifySignatureFields verify required fields
-func (p *Parser) VerifySignatureFields() error {
+func (p *Parser) VerifySignatureFields() *ParserError {
 	if p.parsedHeader.keyID == "" {
 		return &ParserError{
 			"keyId is not set in header",

@@ -1,5 +1,7 @@
 package httpsignatures
 
+import "fmt"
+
 // SignatureHashAlgorithm interface to create/verify Signature using secret keys
 // Algorithm return algorithm name
 // Create create new signature
@@ -25,8 +27,11 @@ type CryptoError struct {
 
 // Error error message
 func (e *CryptoError) Error() string {
-	if e.Err != nil {
-		return e.Message + ": " + e.Err.Error()
+	if e == nil {
+		return ""
 	}
-	return e.Message
+	if e.Err != nil {
+		return fmt.Sprintf("CryptoError: %s: %s", e.Message, e.Err.Error())
+	}
+	return fmt.Sprintf("CryptoError: %s", e.Message)
 }
