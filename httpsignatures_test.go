@@ -380,12 +380,8 @@ func TestVerifySignature(t *testing.T) {
 						http.MethodPost,
 						httpsignaturesHostExampleFull,
 						strings.NewReader(httpsignaturesBodyExample))
-					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date content-type digest content-length",signature="nAkCW0wg9AbbStQRLi8fsS1mPPnA6S5+/0alANcoDFG9hG0bJ8NnMRcB1Sz1eccNMzzLEke7nGXqoiJYZFfT81oaRqh/MNFwQVX4OZvTLZ5xVZQuchRkOSO7b2QX0aFWFOUq6dnwAyliHrp6w3FOxwkGGJPaerw2lOYLdC/Bejk="`)
-					r.Header.Set("Host", "example.com")
-					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="digest",signature="xxx"`)
 					r.Header.Set("Digest", "XXX-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
-					r.Header.Set("Content-Type", "application/json")
-					r.Header.Set("Content-length", "18")
 					return r
 				})(),
 			},
