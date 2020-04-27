@@ -16,6 +16,7 @@ func (a Sha256) Algorithm() string {
 
 // Create Create hash
 func (a Sha256) Create(data []byte) ([]byte, error) {
+	sha256.New()
 	return digestHashAlgorithmCreate(sha256.New, data)
 }
 

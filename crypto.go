@@ -1,6 +1,7 @@
 package httpsignatures
 
 import (
+	"crypto/hmac"
 	"crypto/subtle"
 	"fmt"
 	"hash"
@@ -58,4 +59,27 @@ func digestHashAlgorithmCreate(newHash func() hash.Hash, data []byte) ([]byte, e
 		return nil, &CryptoError{"error creating hash", err}
 	}
 	return h.Sum(nil), nil
+}
+
+func signatureHashAlgorithmVerify(newHash func() hash.Hash, secret Secret, data []byte, signature []byte) error {
+	expected, err := signatureHashAlgorithmCreate(newHash, secret, data)
+	if err != nil {
+		return err
+	}
+	if !hmac.Equal(signature, expected) {
+		return &CryptoError{"wrong signature", nil}
+	}
+	return nil
+}
+
+func signatureHashAlgorithmCreate(newHash func() hash.Hash, secret Secret, data []byte) ([]byte, error) {
+	if len(secret.PrivateKey) == 0 {
+		return nil, &CryptoError{"no private key found", nil}
+	}
+	mac := hmac.New(newHash, []byte(secret.PrivateKey))
+	_, err := mac.Write(data)
+	if err != nil {
+		return nil, &CryptoError{"error creating signature", err}
+	}
+	return mac.Sum(nil), nil
 }

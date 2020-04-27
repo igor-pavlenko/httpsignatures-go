@@ -1,7 +1,6 @@
 package httpsignatures
 
 import (
-	"crypto/hmac"
 	"crypto/sha512"
 )
 
@@ -17,25 +16,10 @@ func (a HmacSha512) Algorithm() string {
 
 // Create Create signature using passed privateKey from secret
 func (a HmacSha512) Create(secret Secret, data []byte) ([]byte, error) {
-	if len(secret.PrivateKey) == 0 {
-		return nil, &CryptoError{"no private key found", nil}
-	}
-	mac := hmac.New(sha512.New, []byte(secret.PrivateKey))
-	_, err := mac.Write(data)
-	if err != nil {
-		return nil, &CryptoError{"error creating signature", err}
-	}
-	return mac.Sum(nil), nil
+	return signatureHashAlgorithmCreate(sha512.New, secret, data)
 }
 
 // Verify Verify signature using passed privateKey from secret
 func (a HmacSha512) Verify(secret Secret, data []byte, signature []byte) error {
-	expected, err := a.Create(secret, data)
-	if err != nil {
-		return err
-	}
-	if !hmac.Equal(signature, expected) {
-		return &CryptoError{"wrong signature", nil}
-	}
-	return nil
+	return signatureHashAlgorithmVerify(sha512.New, secret, data, signature)
 }
