@@ -2,7 +2,6 @@ package httpsignatures
 
 import (
 	"crypto/sha512"
-	"crypto/subtle"
 )
 
 const algoSha512 = "SHA-512"
@@ -17,22 +16,10 @@ func (a Sha512) Algorithm() string {
 
 // Create Create hash
 func (a Sha512) Create(data []byte) ([]byte, error) {
-	h := sha512.New()
-	_, err := h.Write(data)
-	if err != nil {
-		return nil, &CryptoError{"error creating hash", err}
-	}
-	return h.Sum(nil), nil
+	return digestHashAlgorithmCreate(sha512.New, data)
 }
 
 // Verify Verify hash
 func (a Sha512) Verify(data []byte, digest []byte) error {
-	expected, err := a.Create(data)
-	if err != nil {
-		return err
-	}
-	if subtle.ConstantTimeCompare(digest, expected) != 1 {
-		return &CryptoError{"wrong hash", nil}
-	}
-	return nil
+	return digestHashAlgorithmVerify(sha512.New, data, digest)
 }

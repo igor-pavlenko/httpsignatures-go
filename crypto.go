@@ -1,6 +1,10 @@
 package httpsignatures
 
-import "fmt"
+import (
+	"crypto/subtle"
+	"fmt"
+	"hash"
+)
 
 // SignatureHashAlgorithm interface to create/verify Signature using secret keys
 // Algorithm return algorithm name
@@ -34,4 +38,24 @@ func (e *CryptoError) Error() string {
 		return fmt.Sprintf("CryptoError: %s: %s", e.Message, e.Err.Error())
 	}
 	return fmt.Sprintf("CryptoError: %s", e.Message)
+}
+
+func digestHashAlgorithmVerify(newHash func() hash.Hash, data []byte, digest []byte) error {
+	expected, err := digestHashAlgorithmCreate(newHash, data)
+	if err != nil {
+		return err
+	}
+	if subtle.ConstantTimeCompare(digest, expected) != 1 {
+		return &CryptoError{"wrong hash", nil}
+	}
+	return nil
+}
+
+func digestHashAlgorithmCreate(newHash func() hash.Hash, data []byte) ([]byte, error) {
+	h := newHash()
+	_, err := h.Write(data)
+	if err != nil {
+		return nil, &CryptoError{"error creating hash", err}
+	}
+	return h.Sum(nil), nil
 }
