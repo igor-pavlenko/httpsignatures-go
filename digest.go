@@ -94,17 +94,17 @@ func (d *Digest) Verify(r *http.Request) error {
 
 func (d *Digest) readBody(r *http.Request) ([]byte, *DigestError) {
 	if r.ContentLength == 0 {
-		return []byte{}, &DigestError{"empty body", nil}
+		return nil, &DigestError{"empty body", nil}
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return []byte{}, &DigestError{"error reading body", err}
+		return nil, &DigestError{"error reading body", err}
 	}
 
 	err = r.Body.Close()
 	if err != nil {
-		return []byte{}, &DigestError{"error closing body", err}
+		return nil, &DigestError{"error closing body", err}
 	}
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
