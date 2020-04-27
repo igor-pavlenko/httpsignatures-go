@@ -10,17 +10,17 @@ import (
 
 // ASCII codes
 const (
-	fromA byte = 65  // A
-	toZ   byte = 90  // z
-	froma byte = 97  // a
-	toz   byte = 122 // z
-	equal byte = 61  // =
-	quote byte = 34  // "
-	space byte = 32  // space
-	div   byte = 44  // ,
-	from0 byte = 48  // 0
-	to9   byte = 57  // 9
-	min   byte = 45  // -
+	fromA byte = 'A'
+	toZ   byte = 'Z'
+	froma byte = 'a'
+	toz   byte = 'z'
+	equal byte = '='
+	quote byte = '"'
+	space byte = ' '
+	div   byte = ','
+	from0 byte = '0'
+	to9   byte = '9'
+	min   byte = '-'
 )
 
 // ParsedHeader Authorization or Signature header parsed into params
@@ -42,8 +42,8 @@ type ParsedDigestHeader struct {
 
 // ParserError errors during parsing
 type ParserError struct {
-	Message  string
-	Err      error
+	Message string
+	Err     error
 }
 
 // Error error message

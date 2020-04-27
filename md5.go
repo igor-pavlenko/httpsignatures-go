@@ -2,7 +2,6 @@ package httpsignatures
 
 import (
 	"crypto/md5"
-	"crypto/subtle"
 )
 
 const algoMd5 = "MD5"
@@ -17,22 +16,10 @@ func (a Md5) Algorithm() string {
 
 // Create Create hash
 func (a Md5) Create(data []byte) ([]byte, error) {
-	h := md5.New()
-	_, err := h.Write(data)
-	if err != nil {
-		return nil, &CryptoError{"error creating hash", err}
-	}
-	return h.Sum(nil), nil
+	return digestHashAlgorithmCreate(md5.New, data)
 }
 
 // Verify Verify hash
 func (a Md5) Verify(data []byte, digest []byte) error {
-	expected, err := a.Create(data)
-	if err != nil {
-		return err
-	}
-	if subtle.ConstantTimeCompare(digest, expected) != 1 {
-		return &CryptoError{"wrong hash", nil}
-	}
-	return nil
+	return digestHashAlgorithmVerify(md5.New, data, digest)
 }

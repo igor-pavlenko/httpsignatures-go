@@ -86,9 +86,9 @@ func TestSecretsStorageGet(t *testing.T) {
 			args: args{
 				keyID: "k2",
 			},
-			want:       Secret{},
+			want:        Secret{},
 			wantErrType: secretErrType,
-			wantErrMsg: "SecretError: secret not found",
+			wantErrMsg:  "SecretError: secret not found",
 		},
 	}
 	for _, tt := range tests {

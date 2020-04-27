@@ -46,16 +46,16 @@ func TestVerifyDigest(t *testing.T) {
 			args: args{
 				r: getDigestRequestFunc(digestBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
 			},
-			want: true,
+			want:        true,
 			wantErrType: digestErrType,
-			wantErrMsg: "",
+			wantErrMsg:  "",
 		},
 		{
 			name: "Valid SHA-256 digest",
 			args: args{
 				r: getDigestRequestFunc(digestBodyExample, "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
 			},
-			want: true,
+			want:        true,
 			wantErrType: digestErrType,
 		},
 		{
@@ -63,7 +63,7 @@ func TestVerifyDigest(t *testing.T) {
 			args: args{
 				r: getDigestRequestFunc(digestBodyExample, "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew=="),
 			},
-			want: true,
+			want:        true,
 			wantErrType: digestErrType,
 		},
 		{
