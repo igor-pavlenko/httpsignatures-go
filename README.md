@@ -7,4 +7,4 @@
 
 This module is created to provide a simple solution to sign HTTP messages according to document:
 
-https://tools.ietf.org/html/draft-cavage-http-signatures-12
+https://tools.ietf.org/html/draft-ietf-httpbis-message-signatures-00

@@ -1,8 +1,13 @@
 package httpsignatures
 
 import (
+	"crypto"
 	"crypto/hmac"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/subtle"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"hash"
 )
@@ -82,4 +87,77 @@ func signatureHashAlgorithmCreate(newHash func() hash.Hash, secret Secret, data 
 		return nil, &CryptoError{"error creating signature", err}
 	}
 	return mac.Sum(nil), nil
+}
+
+func signatureRsaAlgorithmVerify(t string, newHash func() hash.Hash, hash crypto.Hash, secret Secret, data []byte, signature []byte) error {
+	block, _ := pem.Decode([]byte(secret.PublicKey))
+	if block == nil {
+		return &CryptoError{"no public key found", nil}
+	}
+
+	var pub interface{}
+	var err error
+	switch block.Type {
+	case "PUBLIC KEY":
+		pub, err = x509.ParsePKIXPublicKey(block.Bytes)
+		if err != nil {
+			return &CryptoError{"error ParsePKIXPublicKey", err}
+		}
+	default:
+		return &CryptoError{fmt.Sprintf("unsupported key type %s", block.Type), err}
+	}
+
+	var publicKey *rsa.PublicKey
+	switch pub := pub.(type) {
+	case *rsa.PublicKey:
+		publicKey = pub
+	default:
+		return &CryptoError{"unknown type of public key", nil}
+	}
+
+	h := newHash()
+	_, _ = h.Write(data)
+	if t == algoRsaSha256 || t == algoRsaSha512 {
+		err = rsa.VerifyPKCS1v15(publicKey, hash, h.Sum(nil), signature)
+	} else if t == algoRsaPssSha256 {
+		var opts rsa.PSSOptions
+		opts.SaltLength = rsa.PSSSaltLengthEqualsHash
+		err = rsa.VerifyPSS(publicKey, hash, h.Sum(nil), signature, &opts)
+	} else {
+		return &CryptoError{fmt.Sprintf("unsupported verify algorithm type %s", t), err}
+	}
+	if err != nil {
+		return &CryptoError{"error verify signature", err}
+	}
+	return nil
+}
+
+func signatureRsaAlgorithmCreate(t string, newHash func() hash.Hash, hash crypto.Hash, secret Secret, data []byte) ([]byte, error) {
+	block, _ := pem.Decode([]byte(secret.PrivateKey))
+	if block == nil {
+		return nil, &CryptoError{"no private key found", nil}
+	}
+
+	var privateKey *rsa.PrivateKey
+	var err error
+	switch block.Type {
+	case "RSA PRIVATE KEY":
+		privateKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, &CryptoError{"error ParsePKCS1PrivateKey", err}
+		}
+	default:
+		return nil, &CryptoError{fmt.Sprintf("unsupported key type %s", block.Type), err}
+	}
+
+	h := newHash()
+	_, _ = h.Write(data)
+	if t == algoRsaSha256 || t == algoRsaSha512 {
+		return rsa.SignPKCS1v15(rand.Reader, privateKey, hash, h.Sum(nil))
+	} else if t == algoRsaPssSha256 || t == algoRsaPssSha512 {
+		var opts rsa.PSSOptions
+		opts.SaltLength = rsa.PSSSaltLengthEqualsHash
+		return rsa.SignPSS(rand.Reader, privateKey, hash, h.Sum(nil), &opts)
+	}
+	return nil, &CryptoError{fmt.Sprintf("unsupported algorithm type %s", t), err}
 }

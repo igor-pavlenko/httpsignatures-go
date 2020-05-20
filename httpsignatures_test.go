@@ -286,8 +286,8 @@ func TestVerifySignature(t *testing.T) {
 	ss := NewSecretsStorage(map[string]Secret{
 		"Test": {
 			KeyID:      "Test",
-			PrivateKey: rsaPrivateKey,
-			PublicKey:  rsaPublicKey,
+			PrivateKey: rsaPrivateKey1024,
+			PublicKey:  rsaPublicKey1024,
 			Algorithm:  "RSA-SHA256",
 		},
 	})
@@ -327,7 +327,6 @@ func TestVerifySignature(t *testing.T) {
 					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="(request-target) host date",signature="qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdKFYRqzic+efkb3nndiv/x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0="`)
 					r.Header.Set("Host", "example.com")
 					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
-					r.Header.Set("Content-Type", "application/json")
 					return r
 				})(),
 			},
