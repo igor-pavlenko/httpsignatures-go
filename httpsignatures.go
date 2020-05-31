@@ -47,11 +47,12 @@ func NewHTTPSignatures(ss *SecretsStorage) *HTTPSignatures {
 	hs.ss = ss
 	hs.d = NewDigest()
 	hs.alg = map[string]SignatureHashAlgorithm{
-		algoRsaPssSha256: RsaPssSha256{},
-		algoRsaSha256:  RsaSha256{},
-		algoRsaSha512:  RsaSha512{},
-		algoHmacSha256: HmacSha256{},
-		algoHmacSha512: HmacSha512{},
+		algoRsaSsaPssSha256: RsaSsaPssSha256{},
+		algoRsaSsaPssSha512: RsaSsaPssSha512{},
+		algoRsaSha256:       RsaSha256{},
+		algoRsaSha512:       RsaSha512{},
+		algoHmacSha256:      HmacSha256{},
+		algoHmacSha512:      HmacSha512{},
 	}
 	return hs
 }
@@ -66,8 +67,8 @@ func (hs *HTTPSignatures) SetSignatureAlgorithm(a SignatureHashAlgorithm) {
 	hs.alg[strings.ToUpper(a.Algorithm())] = a
 }
 
-// VerifySignature Verify signature
-func (hs *HTTPSignatures) VerifySignature(r *http.Request) error {
+// Verify Verify signature
+func (hs *HTTPSignatures) Verify(r *http.Request) error {
 	// Check signature header
 	h := r.Header.Get(signatureHeader)
 	if len(h) == 0 {
@@ -137,20 +138,8 @@ func (hs *HTTPSignatures) VerifySignature(r *http.Request) error {
 	return nil
 }
 
-// VerifyAuthorization verify authorization signature
-func (hs *HTTPSignatures) VerifyAuthorization(r http.Request) error {
-
-	return nil
-}
-
-// AddAuthorization add authorization header
-func (hs *HTTPSignatures) AddAuthorization(s Secret, r http.Request) error {
-
-	return nil
-}
-
-// AddSignature add signature header
-func (hs *HTTPSignatures) AddSignature(s Secret, r http.Request) error {
+// Sign add signature header
+func (hs *HTTPSignatures) Sign(s Secret, r http.Request) error {
 
 	return nil
 }

@@ -282,7 +282,7 @@ func TestBuildSignatureString(t *testing.T) {
 	}
 }
 
-func TestVerifySignature(t *testing.T) {
+func TestVerify(t *testing.T) {
 	ss := NewSecretsStorage(map[string]Secret{
 		"Test": {
 			KeyID:      "Test",
@@ -324,7 +324,10 @@ func TestVerifySignature(t *testing.T) {
 						http.MethodPost,
 						httpsignaturesHostExampleFull,
 						strings.NewReader(httpsignaturesBodyExample))
-					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="(request-target) host date",signature="qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdKFYRqzic+efkb3nndiv/x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0="`)
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="` +
+						`(request-target) host date",signature="qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmo` +
+						`xWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdKFYRqzic+efkb3nndiv/` +
+						`x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0="`)
 					r.Header.Set("Host", "example.com")
 					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
 					return r
@@ -342,7 +345,11 @@ func TestVerifySignature(t *testing.T) {
 						http.MethodPost,
 						httpsignaturesHostExampleFull,
 						strings.NewReader(httpsignaturesBodyExample))
-					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="(request-target) (created) (expires) host date content-type digest content-length",signature="nAkCW0wg9AbbStQRLi8fsS1mPPnA6S5+/0alANcoDFG9hG0bJ8NnMRcB1Sz1eccNMzzLEke7nGXqoiJYZFfT81oaRqh/MNFwQVX4OZvTLZ5xVZQuchRkOSO7b2QX0aFWFOUq6dnwAyliHrp6w3FOxwkGGJPaerw2lOYLdC/Bejk="`)
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,` +
+						`expires=1402170699,headers="(request-target) (created) (expires) host date content-type ` +
+						`digest content-length",signature="nAkCW0wg9AbbStQRLi8fsS1mPPnA6S5+/0alANcoDFG9hG0bJ8NnMR` +
+						`cB1Sz1eccNMzzLEke7nGXqoiJYZFfT81oaRqh/MNFwQVX4OZvTLZ5xVZQuchRkOSO7b2QX0aFWFOUq6dnwAyliHr` +
+						`p6w3FOxwkGGJPaerw2lOYLdC/Bejk="`)
 					r.Header.Set("Host", "example.com")
 					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
 					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
@@ -392,7 +399,7 @@ func TestVerifySignature(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hs := NewHTTPSignatures(ss)
-			err := hs.VerifySignature(tt.args.r)
+			err := hs.Verify(tt.args.r)
 			got := err == nil
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})

@@ -8,6 +8,8 @@ import (
 const algoRsaSha256 = "RSA-SHA256"
 
 // RsaSha256 RSA-SHA265 Algorithm
+//
+// Deprecated: specifying signature algorithm enables attack vector.
 type RsaSha256 struct{}
 
 // Algorithm Return algorithm name

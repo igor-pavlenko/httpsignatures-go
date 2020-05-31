@@ -294,14 +294,14 @@ func TestHmacAlgorithm(t *testing.T) {
 			want: "RSA-SHA512",
 		},
 		{
-			name: "RSA-PSS-SHA256 OK",
-			arg:  RsaPssSha256{},
-			want: "RSA-PSS-SHA256",
+			name: "RSASSA-PSS-SHA256 OK",
+			arg:  RsaSsaPssSha256{},
+			want: "RSASSA-PSS-SHA256",
 		},
 		{
-			name: "RSA-PSS-SHA512 OK",
-			arg:  RsaPssSha512{},
-			want: "RSA-PSS-SHA512",
+			name: "RSASSA-PSS-SHA512 OK",
+			arg:  RsaSsaPssSha512{},
+			want: "RSASSA-PSS-SHA512",
 		},
 	}
 	for _, tt := range tests {
@@ -459,9 +459,9 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			wantErrMsg:  "",
 		},
 		{
-			name: "RSA-PSS-SHA256 create ok",
+			name: "RSASSA-PSS-SHA256 create ok",
 			args: args{
-				alg: RsaPssSha256{},
+				alg: RsaSsaPssSha256{},
 				data: []byte(
 					"(request-target): post /foo\n" +
 						"host: example.net\n" +
@@ -471,7 +471,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 					KeyID:      "key1",
 					PrivateKey: rsaPrivateKey1024,
 					PublicKey:  rsaPublicKey1024,
-					Algorithm:  algoRsaPssSha256,
+					Algorithm:  algoRsaSsaPssSha256,
 				},
 			},
 			want:        "",
@@ -479,9 +479,9 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			wantErrMsg:  "",
 		},
 		{
-			name: "RSA-PSS-SHA512 create ok",
+			name: "RSASSA-PSS-SHA512 create ok",
 			args: args{
-				alg: RsaPssSha512{},
+				alg: RsaSsaPssSha512{},
 				data: []byte(
 					"(request-target): post /foo\n" +
 						"host: example.net\n" +
@@ -491,7 +491,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 					KeyID:      "key2",
 					PrivateKey: rsaPrivateKey2048,
 					PublicKey:  rsaPublicKey2048,
-					Algorithm:  algoRsaPssSha512,
+					Algorithm:  algoRsaSsaPssSha512,
 				},
 			},
 			want:        "",
@@ -520,15 +520,15 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.args.alg.Create(tt.args.secret, tt.args.data)
 			sig := base64.StdEncoding.EncodeToString(got)
-			// RSA-PSS Algorithm generate always different signature
-			if tt.args.alg.Algorithm() == algoRsaPssSha256 {
+			// RSASSA-PSS Algorithm generate always different signature
+			if tt.args.alg.Algorithm() == algoRsaSsaPssSha256 {
 				if len(sig) != 172 {
-					t.Errorf(tt.name+"\ngot = %v, expected length = 172 symbols", got)
+					t.Errorf(tt.name+"\ngot = %v, expected length = 172 symbols", sig)
 				}
 				tt.want = sig
-			} else if tt.args.alg.Algorithm() == algoRsaPssSha512 {
+			} else if tt.args.alg.Algorithm() == algoRsaSsaPssSha512 {
 				if len(sig) != 344 {
-					t.Errorf(tt.name+"\ngot = %v, expected length = 344 symbols", got)
+					t.Errorf(tt.name+"\ngot = %v, expected length = 344 symbols", sig)
 				}
 				tt.want = sig
 			}
@@ -732,9 +732,31 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			wantErrMsg:  "CryptoError: unknown type of public key",
 		},
 		{
-			name: "RSA-PSS-SHA256 verify ok",
+			name: "RSA-SHA512 verify ok",
 			args: args{
-				alg: RsaPssSha256{},
+				alg: RsaSha512{},
+				sig: "j2EgWL0QOEmWjsKXRu1MxfYe2CzjdyNkkqbagIYpBNqBg2kevrQSSIocgfESHHoIgayK+we2SRAB59wVEM3gtQuQ9ef1Bik" +
+					"cX54GuqCThSA63kcuGXZzUgQcGnFpy2KO6gV2gl2cCkB8X6ZRY5oFfpiPvFxVY1bg/Y3DXlsKZb0=",
+				data: []byte(
+					"(request-target): post /foo\n" +
+						"host: example.com\n" +
+						"date: Sun, 28 Apr 2020 00:47:00 GMT",
+				),
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: rsaPrivateKey1024,
+					PublicKey:  rsaPublicKey1024,
+					Algorithm:  algoRsaSha512,
+				},
+			},
+			want:        true,
+			wantErrType: cryptoErrType,
+			wantErrMsg:  "",
+		},
+		{
+			name: "RSASSA-PSS-SHA256 verify ok",
+			args: args{
+				alg: RsaSsaPssSha256{},
 				sig: "o77oM9o0bRYedX5a9+boS/1sX/xJBIdMRV89f2vZdeWRb3FGxdBKLDCZTV9ymvkQLxVdS2mdsxxPTTIQfEg2dahXb8DDCW" +
 					"0xQtA2u9/N02P3CSnDXvymDMabVKrSixd2PUHdUZ2ikgqoDcqj2wuSLbVW3fAa0e1lqkTXkxfnyFE=",
 				data: []byte(
@@ -746,7 +768,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 					KeyID:      "key1",
 					PrivateKey: rsaPrivateKey1024,
 					PublicKey:  rsaPublicKey1024,
-					Algorithm:  algoRsaPssSha256,
+					Algorithm:  algoRsaSsaPssSha256,
 				},
 			},
 			want:        true,
@@ -754,16 +776,16 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			wantErrMsg:  "",
 		},
 		{
-			name: "RSA-PSS-SHA256 wrong signature",
+			name: "RSASSA-PSS-SHA256 wrong signature",
 			args: args{
-				alg:  RsaPssSha256{},
+				alg:  RsaSsaPssSha256{},
 				sig:  "MTIz",
 				data: []byte("test"),
 				secret: Secret{
 					KeyID:      "key2",
 					PrivateKey: rsaPrivateKey1024,
 					PublicKey:  rsaPublicKey1024,
-					Algorithm:  algoRsaPssSha256,
+					Algorithm:  algoRsaSsaPssSha256,
 				},
 			},
 			want:        false,
@@ -771,9 +793,9 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			wantErrMsg:  "CryptoError: error verify signature: crypto/rsa: verification error",
 		},
 		{
-			name: "RSA-PSS-SHA256 no public key found",
+			name: "RSASSA-PSS-SHA256 no public key found",
 			args: args{
-				alg:    RsaPssSha256{},
+				alg:    RsaSsaPssSha256{},
 				sig:    "",
 				data:   []byte{},
 				secret: Secret{},
@@ -783,9 +805,9 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			wantErrMsg:  "CryptoError: no public key found",
 		},
 		{
-			name: "RSA-PSS-SHA256 unsupported key type",
+			name: "RSASSA-PSS-SHA256 unsupported key type",
 			args: args{
-				alg:  RsaPssSha256{},
+				alg:  RsaSsaPssSha256{},
 				data: []byte{},
 				secret: Secret{
 					PublicKey: `-----BEGIN NO PUBLIC KEY-----
@@ -797,9 +819,9 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			wantErrMsg:  "CryptoError: unsupported key type NO PUBLIC KEY",
 		},
 		{
-			name: "RSA-PSS-SHA256 error ParsePKIXPublicKey",
+			name: "RSASSA-PSS-SHA256 error ParsePKIXPublicKey",
 			args: args{
-				alg:  RsaPssSha256{},
+				alg:  RsaSsaPssSha256{},
 				data: []byte{},
 				secret: Secret{
 					PublicKey: `-----BEGIN PUBLIC KEY-----
@@ -812,9 +834,9 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
 		},
 		{
-			name: "RSA-PSS-SHA256 unknown type of public key",
+			name: "RSASSA-PSS-SHA256 unknown type of public key",
 			args: args{
-				alg:  RsaPssSha256{},
+				alg:  RsaSsaPssSha256{},
 				data: []byte{},
 				secret: Secret{
 					PublicKey: `-----BEGIN PUBLIC KEY-----
@@ -828,6 +850,30 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			wantErrMsg:  "CryptoError: unknown type of public key",
 		},
 		{
+			name: "RSASSA-PSS-SHA512 verify ok",
+			args: args{
+				alg: RsaSsaPssSha512{},
+				sig: "TFuwpIcrN1bC0pigKTu1tSxFtD2vi3/8GEvI3LKXGcXB6VZjcFCcFFdfQQ3UpzSLrOY7wFen0rfnrEluQJIQBeSCTYN9spe" +
+					"qxFGNGdaMTqQ7B3PNXOY3WiAPEG3psAvrhE1/Vokq33RzIk4ak04rEf2wZU1zVAfd6ohp9HStxrzUTmh0YjIwQ86XIqj+1vY" +
+					"IHjWtxWEsKsO6x+5v8QVE0aim/nMIx5RNCedGzLJK8frbwXi77njuy1INkH8+lduB+QYBWf1rWIB1qLCdG9NHgSD0+zogpSe" +
+					"0gSb3qEXjqpV330GceNMfLRBkj/pq4NzIIanjXTD/NGY5vxDA9zJSiw==",
+				data: []byte(
+					"(request-target): post /foo\n" +
+						"host: example.net\n" +
+						"date: Sun, 28 Apr 2020 00:50:00 GMT",
+				),
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: rsaPrivateKey2048,
+					PublicKey:  rsaPublicKey2048,
+					Algorithm:  algoRsaSsaPssSha512,
+				},
+			},
+			want:        true,
+			wantErrType: cryptoErrType,
+			wantErrMsg:  "",
+		},
+		{
 			name: "RSA-DUMMY unsupported algorithm type",
 			args: args{
 				alg:  RsaDummy{},
@@ -837,7 +883,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 					KeyID:      "key2",
 					PrivateKey: rsaPrivateKey1024,
 					PublicKey:  rsaPublicKey1024,
-					Algorithm:  algoRsaPssSha256,
+					Algorithm:  algoRsaSsaPssSha256,
 				},
 			},
 			want:        false,

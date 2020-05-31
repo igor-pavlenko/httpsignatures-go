@@ -8,3 +8,11 @@
 This module is created to provide a simple solution to sign HTTP messages according to document:
 
 https://tools.ietf.org/html/draft-ietf-httpbis-message-signatures-00
+
+### @todo:
+* httpsignatures.Sign + Tests
+* Crypto
+  * https://golang.org/pkg/crypto/ecdsa/
+  * https://golang.org/pkg/crypto/ed25519/
+* Documentation
+* Gin plugin

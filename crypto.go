@@ -119,7 +119,7 @@ func signatureRsaAlgorithmVerify(t string, newHash func() hash.Hash, hash crypto
 	_, _ = h.Write(data)
 	if t == algoRsaSha256 || t == algoRsaSha512 {
 		err = rsa.VerifyPKCS1v15(publicKey, hash, h.Sum(nil), signature)
-	} else if t == algoRsaPssSha256 {
+	} else if t == algoRsaSsaPssSha256 || t == algoRsaSsaPssSha512 {
 		var opts rsa.PSSOptions
 		opts.SaltLength = rsa.PSSSaltLengthEqualsHash
 		err = rsa.VerifyPSS(publicKey, hash, h.Sum(nil), signature, &opts)
@@ -154,7 +154,7 @@ func signatureRsaAlgorithmCreate(t string, newHash func() hash.Hash, hash crypto
 	_, _ = h.Write(data)
 	if t == algoRsaSha256 || t == algoRsaSha512 {
 		return rsa.SignPKCS1v15(rand.Reader, privateKey, hash, h.Sum(nil))
-	} else if t == algoRsaPssSha256 || t == algoRsaPssSha512 {
+	} else if t == algoRsaSsaPssSha256 || t == algoRsaSsaPssSha512 {
 		var opts rsa.PSSOptions
 		opts.SaltLength = rsa.PSSSaltLengthEqualsHash
 		return rsa.SignPSS(rand.Reader, privateKey, hash, h.Sum(nil), &opts)
