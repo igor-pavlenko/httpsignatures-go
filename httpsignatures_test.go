@@ -54,59 +54,10 @@ func TestNewHttpSignatures(t *testing.T) {
 	}
 }
 
-func TestIsAlgoHasPrefix(t *testing.T) {
-	type args struct {
-		alg string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "rsa true",
-			args: args{
-				alg: "rsa",
-			},
-			want: true,
-		},
-		{
-			name: "hamc_md5 true",
-			args: args{
-				alg: "HMAC_MD5",
-			},
-			want: true,
-		},
-		{
-			name: "ecdsa true",
-			args: args{
-				alg: "ecdsa",
-			},
-			want: true,
-		},
-		{
-			name: "md5 false",
-			args: args{
-				alg: "MD5",
-			},
-			want: false,
-		},
-	}
-	hs := NewHTTPSignatures(NewSecretsStorage(map[string]Secret{}))
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := hs.isAlgoHasPrefix(tt.args.alg)
-			if got != tt.want {
-				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestBuildSignatureString(t *testing.T) {
 	ss := NewSecretsStorage(map[string]Secret{})
 	type args struct {
-		ph ParsedHeader
+		ph Headers
 		r  *http.Request
 	}
 	tests := []struct {
@@ -119,7 +70,7 @@ func TestBuildSignatureString(t *testing.T) {
 		{
 			name: "Valid signature string",
 			args: args{
-				ph: ParsedHeader{
+				ph: Headers{
 					algorithm: "md5",
 					headers: []string{
 						"(request-target)",
@@ -154,28 +105,9 @@ func TestBuildSignatureString(t *testing.T) {
 			wantErrMsg:  "",
 		},
 		{
-			name: "Has only created header in signature & rsa algorithm",
-			args: args{
-				ph: ParsedHeader{
-					algorithm: "rsa",
-					headers: []string{
-						"(created)",
-					},
-					created: time.Unix(1402170695, 0),
-				},
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, httpsignaturesHostExample, strings.NewReader(httpsignaturesBodyExample))
-					return r
-				})(),
-			},
-			want:        nil,
-			wantErrType: httpsignaturesErrType,
-			wantErrMsg:  "param '(created)' and algorithm 'rsa'",
-		},
-		{
 			name: "Has created header with 0 value",
 			args: args{
-				ph: ParsedHeader{
+				ph: Headers{
 					algorithm: "md5",
 					headers: []string{
 						"(created)",
@@ -192,28 +124,9 @@ func TestBuildSignatureString(t *testing.T) {
 			wantErrMsg:  "param '(created)', required in signature, not found",
 		},
 		{
-			name: "Has only expires header in signature & hmac_sha-1 algorithm",
-			args: args{
-				ph: ParsedHeader{
-					algorithm: "hmac_sha-1",
-					headers: []string{
-						"(expires)",
-					},
-					expires: time.Unix(1402170695, 0),
-				},
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, httpsignaturesHostExample, strings.NewReader(httpsignaturesBodyExample))
-					return r
-				})(),
-			},
-			want:        nil,
-			wantErrType: httpsignaturesErrType,
-			wantErrMsg:  "param '(expires)' and algorithm 'hmac_sha-1'",
-		},
-		{
 			name: "Has expires header with 0 value",
 			args: args{
-				ph: ParsedHeader{
+				ph: Headers{
 					algorithm: "sha-256",
 					headers: []string{
 						"(expires)",
@@ -232,7 +145,7 @@ func TestBuildSignatureString(t *testing.T) {
 		{
 			name: "Header with 0 length",
 			args: args{
-				ph: ParsedHeader{
+				ph: Headers{
 					algorithm: "md5",
 					headers: []string{
 						"host",
@@ -255,7 +168,7 @@ func TestBuildSignatureString(t *testing.T) {
 		{
 			name: "Header not found",
 			args: args{
-				ph: ParsedHeader{
+				ph: Headers{
 					algorithm: "md5",
 					headers: []string{
 						"host",

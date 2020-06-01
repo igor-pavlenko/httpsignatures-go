@@ -23,19 +23,27 @@ const (
 	min   byte = '-'
 )
 
-// ParsedHeader Authorization or Signature header parsed into params
-type ParsedHeader struct {
-	keyword   string
+const (
+	paramKeyID     = "keyId"
+	paramAlgorithm = "algorithm"
+	paramCreated   = "created"
+	paramExpires   = "expires"
+	paramHeaders   = "headers"
+	paramSignature = "signature"
+)
+
+// Headers Signature headers & params
+type Headers struct {
 	keyID     string    // REQUIRED
-	signature string    // REQUIRED
 	algorithm string    // RECOMMENDED
 	created   time.Time // RECOMMENDED
 	expires   time.Time // OPTIONAL (Not implemented: "Subsecond precision is allowed using decimal notation.")
 	headers   []string  // OPTIONAL
+	signature string    // REQUIRED
 }
 
-// ParsedDigestHeader Digest header parsed into params (alg & digest)
-type ParsedDigestHeader struct {
+// DigestHeader Digest header parsed into params (alg & digest)
+type DigestHeader struct {
 	algo   string
 	digest string
 }
@@ -59,13 +67,12 @@ func (e *ParserError) Error() string {
 
 // Parser parser internal struct
 type Parser struct {
-	parsedHeader       ParsedHeader
-	parsedDigestHeader ParsedDigestHeader
-	keyword            []byte
-	key                []byte
-	value              []byte
-	flag               string
-	params             map[string]bool
+	headers      Headers
+	digestHeader DigestHeader
+	key          []byte
+	value        []byte
+	flag         string
+	params       map[string]bool
 }
 
 // NewParser create new parser
@@ -75,27 +82,21 @@ func NewParser() *Parser {
 	return p
 }
 
-// ParseAuthorizationHeader parse Authorization header
-func (p *Parser) ParseAuthorizationHeader(header string) (ParsedHeader, *ParserError) {
-	p.flag = "keyword"
-	return p.parseSignature(header)
-}
-
 // ParseSignatureHeader parse Signature header
-func (p *Parser) ParseSignatureHeader(header string) (ParsedHeader, *ParserError) {
+func (p *Parser) ParseSignatureHeader(header string) (Headers, *ParserError) {
 	p.flag = "param"
 	return p.parseSignature(header)
 }
 
 // ParseDigestHeader parse Digest header
-func (p *Parser) ParseDigestHeader(header string) (ParsedDigestHeader, *ParserError) {
+func (p *Parser) ParseDigestHeader(header string) (DigestHeader, *ParserError) {
 	p.flag = "algorithm"
 	return p.parseDigest(header)
 }
 
-func (p *Parser) parseSignature(header string) (ParsedHeader, *ParserError) {
+func (p *Parser) parseSignature(header string) (Headers, *ParserError) {
 	if len(header) == 0 {
-		return ParsedHeader{}, &ParserError{"empty header", nil}
+		return Headers{}, &ParserError{"empty header", nil}
 	}
 
 	var err *ParserError
@@ -106,15 +107,13 @@ func (p *Parser) parseSignature(header string) (ParsedHeader, *ParserError) {
 		if rErr == io.EOF {
 			err = p.handleSignatureEOF()
 			if err != nil {
-				return ParsedHeader{}, err
+				return Headers{}, err
 			}
 			break
 		}
 
 		cur := b[0]
 		switch p.flag {
-		case "keyword":
-			err = p.parseKeyword(cur)
 		case "param":
 			err = p.parseKey(cur)
 		case "equal":
@@ -132,22 +131,22 @@ func (p *Parser) parseSignature(header string) (ParsedHeader, *ParserError) {
 
 		}
 		if err != nil {
-			return ParsedHeader{}, err
+			return Headers{}, err
 		}
 	}
 
 	// 2.1.6 If not specified, implementations MUST operate as if the field were specified with a
 	// single value, `(created)`, in the list of HTTP headers.
-	if len(p.parsedHeader.headers) == 0 {
-		p.parsedHeader.headers = append(p.parsedHeader.headers, "(created)")
+	if len(p.headers.headers) == 0 {
+		p.headers.headers = append(p.headers.headers, "(created)")
 	}
 
-	return p.parsedHeader, nil
+	return p.headers, nil
 }
 
-func (p *Parser) parseDigest(header string) (ParsedDigestHeader, *ParserError) {
+func (p *Parser) parseDigest(header string) (DigestHeader, *ParserError) {
 	if len(header) == 0 {
-		return ParsedDigestHeader{}, &ParserError{"empty digest header", nil}
+		return DigestHeader{}, &ParserError{"empty digest header", nil}
 	}
 
 	var err *ParserError
@@ -158,7 +157,7 @@ func (p *Parser) parseDigest(header string) (ParsedDigestHeader, *ParserError) {
 		if rErr == io.EOF {
 			err = p.handleDigestEOF()
 			if err != nil {
-				return ParsedDigestHeader{}, err
+				return DigestHeader{}, err
 			}
 			break
 		}
@@ -174,18 +173,16 @@ func (p *Parser) parseDigest(header string) (ParsedDigestHeader, *ParserError) {
 
 		}
 		if err != nil {
-			return ParsedDigestHeader{}, err
+			return DigestHeader{}, err
 		}
 	}
 
-	return p.parsedDigestHeader, nil
+	return p.digestHeader, nil
 }
 
 func (p *Parser) handleSignatureEOF() *ParserError {
 	var err *ParserError
 	switch p.flag {
-	case "keyword":
-		err = p.setKeyword()
 	case "param":
 		if len(p.key) == 0 {
 			err = &ParserError{"unexpected end of header, expected parameter", nil}
@@ -212,18 +209,6 @@ func (p *Parser) handleDigestEOF() *ParserError {
 		err = p.setDigest()
 	}
 	return err
-}
-
-func (p *Parser) parseKeyword(cur byte) *ParserError {
-	if (cur >= fromA && cur <= toZ) || (cur >= froma && cur <= toz) {
-		p.keyword = append(p.keyword, cur)
-	} else if cur == space && len(p.keyword) > 0 {
-		p.flag = "param"
-		if err := p.setKeyword(); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (p *Parser) parseKey(cur byte) *ParserError {
@@ -355,17 +340,6 @@ func (p *Parser) getValueType() string {
 	return "string"
 }
 
-func (p *Parser) setKeyword() *ParserError {
-	if "Signature" != string(p.keyword) {
-		return &ParserError{
-			"invalid Authorization header, must start from Signature keyword",
-			nil,
-		}
-	}
-	p.parsedHeader.keyword = "Signature"
-	return nil
-}
-
 func (p *Parser) setKeyValue() *ParserError {
 	k := string(p.key)
 
@@ -387,21 +361,21 @@ func (p *Parser) setKeyValue() *ParserError {
 	p.params[k] = true
 
 	if k == "keyId" {
-		p.parsedHeader.keyID = string(p.value)
+		p.headers.keyID = string(p.value)
 	} else if k == "algorithm" {
-		p.parsedHeader.algorithm = string(p.value)
+		p.headers.algorithm = string(p.value)
 	} else if k == "headers" {
-		p.parsedHeader.headers = strings.Fields(string(p.value))
+		p.headers.headers = strings.Fields(string(p.value))
 	} else if k == "signature" {
-		p.parsedHeader.signature = string(p.value)
+		p.headers.signature = string(p.value)
 	} else if k == "created" {
 		var err error
-		if p.parsedHeader.created, err = p.intToTime(p.value); err != nil {
+		if p.headers.created, err = p.intToTime(p.value); err != nil {
 			return &ParserError{"wrong 'created' param value", err}
 		}
 	} else if k == "expires" {
 		var err error
-		if p.parsedHeader.expires, err = p.intToTime(p.value); err != nil {
+		if p.headers.expires, err = p.intToTime(p.value); err != nil {
 			return &ParserError{"wrong 'expires' param value", err}
 		}
 	}
@@ -431,8 +405,8 @@ func (p *Parser) setDigest() *ParserError {
 		}
 	}
 
-	p.parsedDigestHeader.algo = strings.ToUpper(string(p.key))
-	p.parsedDigestHeader.digest = string(p.value)
+	p.digestHeader.algo = strings.ToUpper(string(p.key))
+	p.digestHeader.digest = string(p.value)
 
 	p.key = nil
 	p.value = nil
@@ -442,14 +416,14 @@ func (p *Parser) setDigest() *ParserError {
 
 // VerifySignatureFields verify required fields
 func (p *Parser) VerifySignatureFields() *ParserError {
-	if p.parsedHeader.keyID == "" {
+	if p.headers.keyID == "" {
 		return &ParserError{
 			"keyId is not set in header",
 			nil,
 		}
 	}
 
-	if p.parsedHeader.signature == "" {
+	if p.headers.signature == "" {
 		return &ParserError{
 			"signature is not set in header",
 			nil,

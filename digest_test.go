@@ -12,7 +12,9 @@ const digestHostExample = "https://example.com"
 
 var getDigestRequestFunc = func(b string, h string) *http.Request {
 	r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(b))
-	r.Header.Set("Digest", h)
+	if len(h) > 0 {
+		r.Header.Set("Digest", h)
+	}
 	return r
 }
 
@@ -61,7 +63,8 @@ func TestVerifyDigest(t *testing.T) {
 		{
 			name: "Valid SHA-512 digest",
 			args: args{
-				r: getDigestRequestFunc(digestBodyExample, "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew=="),
+				r: getDigestRequestFunc(digestBodyExample, "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+"+
+					"AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew=="),
 			},
 			want:        true,
 			wantErrType: digestErrType,
@@ -122,6 +125,48 @@ func TestVerifyDigest(t *testing.T) {
 	}
 }
 
+func TestCreateDigest(t *testing.T) {
+	type args struct {
+		algo string
+		r    *http.Request
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        string
+		wantErrType string
+		wantErrMsg  string
+	}{
+		{
+			name: "Valid MD5 digest",
+			args: args{
+				algo: "MD5",
+				r:    getDigestRequestFunc(digestBodyExample, ""),
+			},
+			want:        "MD5=Sd/dVLAcvNLSq16eXua5uQ==",
+			wantErrType: "",
+			wantErrMsg:  "",
+		},
+		{
+			name: "Unsupported digest algo",
+			args: args{
+				algo: "MD4",
+				r:    getDigestRequestFunc(digestBodyExample, ""),
+			},
+			want:        "",
+			wantErrType: digestErrType,
+			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'MD4'",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := NewDigest()
+			got, err := d.Create(tt.args.algo, tt.args.r)
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
 func TestDigestSetDigestHashAlgorithm(t *testing.T) {
 	tests := []struct {
 		name string
@@ -138,6 +183,38 @@ func TestDigestSetDigestHashAlgorithm(t *testing.T) {
 			d.SetDigestHashAlgorithm(tt.arg)
 			if _, ok := d.alg["TEST"]; ok == false {
 				t.Error("algorithm not found")
+			}
+		})
+	}
+}
+
+func TestDigestSetDigestDefaultHashAlgorithm(t *testing.T) {
+	tests := []struct {
+		name string
+		arg  string
+		want bool
+	}{
+		{
+			name: "Set new default algorithm OK",
+			arg:  algoSha256,
+			want: true,
+		},
+		{
+			name: "Algorithm was not set",
+			arg:  "test",
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := NewDigest()
+			_ = d.SetDigestDefaultHashAlgorithm(tt.arg)
+			got := false
+			if d.defaultAlg == tt.arg {
+				got = true
+			}
+			if got != tt.want {
+				t.Error("default algorithm was not set")
 			}
 		})
 	}
