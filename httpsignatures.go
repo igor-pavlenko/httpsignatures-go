@@ -65,9 +65,9 @@ func (hs *HTTPSignatures) SetDigestAlgorithm(a DigestHashAlgorithm) {
 	hs.d.SetDigestHashAlgorithm(a)
 }
 
-// SetDigestDefaultAlgorithm set custom digest hash algorithm
-func (hs *HTTPSignatures) SetDigestDefaultAlgorithm(a string) error {
-	return hs.d.SetDigestDefaultHashAlgorithm(a)
+// SetDefaultDigestAlgorithm set custom digest hash algorithm
+func (hs *HTTPSignatures) SetDefaultDigestAlgorithm(a string) error {
+	return hs.d.SetDefaultDigestHashAlgorithm(a)
 }
 
 // SetSignatureAlgorithm set custom signature hash algorithm

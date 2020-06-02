@@ -72,24 +72,24 @@ kBqs/nXt7vHlOp4mHv9fzB8xUN/hHin8mnsFz8RWgfIv+hxKwpEht6A4++miB94H
 AgMBAAE=
 -----END PUBLIC KEY-----`
 
-const algoRsaDummy = "RSA-DUMMY"
+const rsaDummyName = "RSA-DUMMY"
 
 // RsaDummy RSA-DUMMY Algorithm
 type RsaDummy struct{}
 
 // Algorithm Return algorithm name
 func (a RsaDummy) Algorithm() string {
-	return algoRsaDummy
+	return rsaDummyName
 }
 
 // Create Create dummy
 func (a RsaDummy) Create(secret Secret, data []byte) ([]byte, error) {
-	return signatureRsaAlgorithmCreate(algoRsaDummy, sha256.New, crypto.SHA256, secret, data)
+	return signatureRsaAlgorithmCreate(rsaDummyName, sha256.New, crypto.SHA256, secret, data)
 }
 
 // Verify Verify dummy
 func (a RsaDummy) Verify(secret Secret, data []byte, signature []byte) error {
-	return signatureRsaAlgorithmVerify(algoRsaDummy, sha256.New, crypto.SHA256, secret, data, signature)
+	return signatureRsaAlgorithmVerify(rsaDummyName, sha256.New, crypto.SHA256, secret, data, signature)
 }
 
 func TestHashAlgorithm(t *testing.T) {
@@ -507,7 +507,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 					KeyID:      "key1",
 					PrivateKey: rsaPrivateKey1024,
 					PublicKey:  rsaPublicKey1024,
-					Algorithm:  algoRsaDummy,
+					Algorithm:  rsaDummyName,
 				},
 			},
 			want:        "",

@@ -89,7 +89,8 @@ func signatureHashAlgorithmCreate(newHash func() hash.Hash, secret Secret, data 
 	return mac.Sum(nil), nil
 }
 
-func signatureRsaAlgorithmVerify(t string, newHash func() hash.Hash, hash crypto.Hash, secret Secret, data []byte, signature []byte) error {
+func signatureRsaAlgorithmVerify(t string, newHash func() hash.Hash, hash crypto.Hash, secret Secret, data []byte,
+	signature []byte) error {
 	block, _ := pem.Decode([]byte(secret.PublicKey))
 	if block == nil {
 		return &CryptoError{"no public key found", nil}
@@ -132,7 +133,8 @@ func signatureRsaAlgorithmVerify(t string, newHash func() hash.Hash, hash crypto
 	return nil
 }
 
-func signatureRsaAlgorithmCreate(t string, newHash func() hash.Hash, hash crypto.Hash, secret Secret, data []byte) ([]byte, error) {
+func signatureRsaAlgorithmCreate(t string, newHash func() hash.Hash, hash crypto.Hash, secret Secret,
+	data []byte) ([]byte, error) {
 	block, _ := pem.Decode([]byte(secret.PrivateKey))
 	if block == nil {
 		return nil, &CryptoError{"no private key found", nil}

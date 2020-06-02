@@ -50,8 +50,8 @@ func (d *Digest) SetDigestHashAlgorithm(a DigestHashAlgorithm) {
 	d.alg[strings.ToUpper(a.Algorithm())] = a
 }
 
-// SetDigestDefaultHashAlgorithm set digest default algorithm options (default from available)
-func (d *Digest) SetDigestDefaultHashAlgorithm(a string) error {
+// SetDefaultDigestHashAlgorithm set digest default algorithm options (default from available)
+func (d *Digest) SetDefaultDigestHashAlgorithm(a string) error {
 	_, ok := d.alg[strings.ToUpper(a)]
 	if !ok {
 		return &DigestError{
@@ -128,8 +128,8 @@ func (d *Digest) Create(alg string, r *http.Request) (string, error) {
 	hash, err := h.Create(b)
 	if err != nil {
 		return "", &DigestError{
-			fmt.Sprintf("error creating digest hash '%s", alg),
-			nil,
+			fmt.Sprintf("error creating digest hash '%s'", alg),
+			err,
 		}
 	}
 

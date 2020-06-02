@@ -1,27 +1,19 @@
 package httpsignatures
 
 import (
+	"errors"
 	"net/http"
-	"strings"
 	"testing"
 )
 
 const digestErrType = "*httpsignatures.DigestError"
-const digestBodyExample = `{"hello": "world"}`
-const digestHostExample = "https://example.com"
-
-var getDigestRequestFunc = func(b string, h string) *http.Request {
-	r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(b))
-	if len(h) > 0 {
-		r.Header.Set("Digest", h)
-	}
-	return r
-}
 
 type testAlg struct{}
 
+const testAlgName = "TEST"
+
 func (a testAlg) Algorithm() string {
-	return "TEST"
+	return testAlgName
 }
 
 func (a testAlg) Create(data []byte) ([]byte, error) {
@@ -30,6 +22,20 @@ func (a testAlg) Create(data []byte) ([]byte, error) {
 
 func (a testAlg) Verify(data []byte, digest []byte) error {
 	return nil
+}
+
+type errAlg struct{}
+
+func (a errAlg) Algorithm() string {
+	return "ERR"
+}
+
+func (a errAlg) Create(data []byte) ([]byte, error) {
+	return []byte{}, errors.New("create hash error")
+}
+
+func (a errAlg) Verify(data []byte, digest []byte) error {
+	return errors.New("verify hash error")
 }
 
 func TestVerifyDigest(t *testing.T) {
@@ -157,10 +163,21 @@ func TestCreateDigest(t *testing.T) {
 			wantErrType: digestErrType,
 			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'MD4'",
 		},
+		{
+			name: "Create digest error",
+			args: args{
+				algo: "ERR",
+				r:    getDigestRequestFunc(digestBodyExample, ""),
+			},
+			want:        "",
+			wantErrType: digestErrType,
+			wantErrMsg:  "DigestError: error creating digest hash 'ERR': create hash error",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := NewDigest()
+			d.SetDigestHashAlgorithm(errAlg{})
 			got, err := d.Create(tt.args.algo, tt.args.r)
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
@@ -181,7 +198,7 @@ func TestDigestSetDigestHashAlgorithm(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := NewDigest()
 			d.SetDigestHashAlgorithm(tt.arg)
-			if _, ok := d.alg["TEST"]; ok == false {
+			if _, ok := d.alg[testAlgName]; ok == false {
 				t.Error("algorithm not found")
 			}
 		})
@@ -208,7 +225,7 @@ func TestDigestSetDigestDefaultHashAlgorithm(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := NewDigest()
-			_ = d.SetDigestDefaultHashAlgorithm(tt.arg)
+			_ = d.SetDefaultDigestHashAlgorithm(tt.arg)
 			got := false
 			if d.defaultAlg == tt.arg {
 				got = true
