@@ -8,10 +8,7 @@ import (
 	"time"
 )
 
-const hsErrType = "*httpsignatures.Error"
-const hsBodyExample = `{"hello": "world"}`
-const hsHostExample = "https://example.org/foo"
-const hsHostExampleFull = "https://example.com/foo?param=value&pet=dog"
+const testHSErrType = "*httpsignatures.Error"
 
 func TestNewHttpSignatures(t *testing.T) {
 	ss := NewSecretsStorage(map[string]Secret{
@@ -54,7 +51,272 @@ func TestNewHttpSignatures(t *testing.T) {
 	}
 }
 
-func TestBuildSignatureString(t *testing.T) {
+func TestVerify(t *testing.T) {
+	ss := NewSecretsStorage(map[string]Secret{
+		"Test": {
+			KeyID:      "Test",
+			PrivateKey: testRsaPrivateKey1024,
+			PublicKey:  testRsaPublicKey1024,
+			Algorithm:  "RSA-SHA256",
+		},
+		"NotSupported": {
+			KeyID:     "NotSupported",
+			Algorithm: "Dummy",
+		},
+	})
+	type args struct {
+		r *http.Request
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        bool
+		wantErrType string
+		wantErrMsg  string
+	}{
+		{
+			name: "Valid signature basic test",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="`+
+						`(request-target) host date",signature="qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmo`+
+						`xWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdKFYRqzic+efkb3nndiv/`+
+						`x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0="`)
+					r.Header.Set("Host", testHostExample)
+					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
+					return r
+				})(),
+			},
+			want:        true,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "",
+		},
+		{
+			name: "Valid signature all headers test",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,`+
+						`expires=1402170699,headers="(request-target) (created) (expires) host date content-type `+
+						`digest content-length",signature="nAkCW0wg9AbbStQRLi8fsS1mPPnA6S5+/0alANcoDFG9hG0bJ8NnMR`+
+						`cB1Sz1eccNMzzLEke7nGXqoiJYZFfT81oaRqh/MNFwQVX4OZvTLZ5xVZQuchRkOSO7b2QX0aFWFOUq6dnwAyliHr`+
+						`p6w3FOxwkGGJPaerw2lOYLdC/Bejk="`)
+					r.Header.Set("Host", testHostExample)
+					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
+					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
+					r.Header.Set("Content-Type", "application/json")
+					r.Header.Set("Content-length", "18")
+					return r
+				})(),
+			},
+			want:        true,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "",
+		},
+		{
+			name: "No Signature header",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "signature header not found",
+		},
+		{
+			name: "Parser error",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId=Test"`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testParserErrType,
+			wantErrMsg:  "ParserError: found 'T' — unsupported symbol, expected '\"' or space symbol",
+		},
+		{
+			name: "Required field not found",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `algorithm="rsa-sha256",headers="host",signature="qwe"`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testParserErrType,
+			wantErrMsg:  "ParserError: keyId is not set in header",
+		},
+		{
+			name: "KeyId not found in secrets",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="test3",algorithm="rsa-sha256",headers="host",`+
+						`signature="MTIz"`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "keyID 'test3' not found: SecretError: secret not found",
+		},
+		{
+			name: "Algorithm does not match",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha512",headers="host",`+
+						`signature="MTIz"`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "wrong algorithm 'rsa-sha512' for keyId 'Test'",
+		},
+		{
+			name: "Algorithm not supported",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="NotSupported",algorithm="Dummy",headers="host",`+
+						`signature="MTIz"`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "algorithm 'Dummy' not supported",
+		},
+		{
+			name: "Digest error",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="digest",signature="xxx"`)
+					r.Header.Set("Digest", "XXX-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testDigestErrType,
+			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'XXX-256'",
+		},
+		{
+			name: "Error building signature string",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="`+
+						`host",signature="MTIz"`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "build signature string error: header 'host', required in signature, not found",
+		},
+		{
+			name: "Empty signature string",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",signature="MTIz"`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "empty string for signature",
+		},
+		{
+			name: "Error decode signature from base64",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="host",`+
+						`signature="x"`)
+					r.Header.Set("Host", testHostExample)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "error decode signature from base64: illegal base64 data at input byte 0",
+		},
+		{
+			name: "Wrong signature",
+			args: args{
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="`+
+						`(request-target) host date",signature="MTIz"`)
+					r.Header.Set("Host", testHostExample)
+					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "wrong signature: CryptoError: error verify signature: crypto/rsa: verification error",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hs := NewHTTPSignatures(ss)
+			err := hs.Verify(tt.args.r)
+			got := err == nil
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestHSBuildSignatureString(t *testing.T) {
 	ss := NewSecretsStorage(map[string]Secret{})
 	type args struct {
 		ph Headers
@@ -85,8 +347,8 @@ func TestBuildSignatureString(t *testing.T) {
 					expires: time.Unix(1402170995, 0),
 				},
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, hsHostExample, strings.NewReader(hsBodyExample))
-					r.Header.Set("Host", "example.org")
+					r, _ := http.NewRequest(http.MethodPost, testHostExampleShortPath, strings.NewReader(testBodyExample))
+					r.Header.Set("Host", testHostExample)
 					r.Header.Set("Date", "Tue, 07 Jun 2014 20:51:35 GMT")
 					r.Header.Set("Content-Type", "application/json")
 					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
@@ -97,11 +359,11 @@ func TestBuildSignatureString(t *testing.T) {
 			want: []byte("(request-target): post /foo\n" +
 				"(created): 1402170695\n" +
 				"(expires): 1402170995\n" +
-				"host: example.org\n" +
+				"host: " + testHostExample + "\n" +
 				"date: Tue, 07 Jun 2014 20:51:35 GMT\n" +
 				"digest: SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=\n" +
 				"content-length: 18"),
-			wantErrType: hsErrType,
+			wantErrType: testHSErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -115,12 +377,12 @@ func TestBuildSignatureString(t *testing.T) {
 					created: time.Unix(0, 0),
 				},
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, hsHostExample, strings.NewReader(hsBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, testHostExampleShortPath, strings.NewReader(testBodyExample))
 					return r
 				})(),
 			},
 			want:        nil,
-			wantErrType: hsErrType,
+			wantErrType: testHSErrType,
 			wantErrMsg:  "param '(created)', required in signature, not found",
 		},
 		{
@@ -134,12 +396,12 @@ func TestBuildSignatureString(t *testing.T) {
 					expires: time.Unix(0, 0),
 				},
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, hsHostExample, strings.NewReader(hsBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, testHostExampleShortPath, strings.NewReader(testBodyExample))
 					return r
 				})(),
 			},
 			want:        nil,
-			wantErrType: hsErrType,
+			wantErrType: testHSErrType,
 			wantErrMsg:  "param '(expires)', required in signature, not found",
 		},
 		{
@@ -153,16 +415,16 @@ func TestBuildSignatureString(t *testing.T) {
 					},
 				},
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, hsHostExample, strings.NewReader(hsBodyExample))
-					r.Header.Set("Host", "example.org")
+					r, _ := http.NewRequest(http.MethodPost, testHostExampleShortPath, strings.NewReader(testBodyExample))
+					r.Header.Set("Host", testHostExample)
 					r.Header.Set("Digest", "")
 					return r
 				})(),
 			},
 			want: []byte(
-				"host: example.org\n" +
+				"host: " + testHostExample + "\n" +
 					"digest: "),
-			wantErrType: hsErrType,
+			wantErrType: testHSErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -176,13 +438,13 @@ func TestBuildSignatureString(t *testing.T) {
 					},
 				},
 				r: (func() *http.Request {
-					r, _ := http.NewRequest(http.MethodPost, hsHostExample, strings.NewReader(hsBodyExample))
+					r, _ := http.NewRequest(http.MethodPost, testHostExampleShortPath, strings.NewReader(testBodyExample))
 					r.Header.Set("Host", "example.org")
 					return r
 				})(),
 			},
 			want:        nil,
-			wantErrType: hsErrType,
+			wantErrType: testHSErrType,
 			wantErrMsg:  "header 'digest', required in signature, not found",
 		},
 	}
@@ -190,130 +452,6 @@ func TestBuildSignatureString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hs := NewHTTPSignatures(ss)
 			got, err := hs.buildSignatureString(tt.args.ph, tt.args.r)
-			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
-		})
-	}
-}
-
-func TestVerify(t *testing.T) {
-	ss := NewSecretsStorage(map[string]Secret{
-		"Test": {
-			KeyID:      "Test",
-			PrivateKey: rsaPrivateKey1024,
-			PublicKey:  rsaPublicKey1024,
-			Algorithm:  "RSA-SHA256",
-		},
-	})
-	type args struct {
-		r *http.Request
-	}
-	tests := []struct {
-		name        string
-		args        args
-		want        bool
-		wantErrType string
-		wantErrMsg  string
-	}{
-		{
-			name: "No Signature header",
-			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(
-						http.MethodPost,
-						hsHostExampleFull,
-						strings.NewReader(hsBodyExample))
-					return r
-				})(),
-			},
-			want:        false,
-			wantErrType: hsErrType,
-			wantErrMsg:  "signature header not found",
-		},
-		{
-			name: "Valid signature basic test",
-			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(
-						http.MethodPost,
-						hsHostExampleFull,
-						strings.NewReader(hsBodyExample))
-					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="`+
-						`(request-target) host date",signature="qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmo`+
-						`xWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdKFYRqzic+efkb3nndiv/`+
-						`x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0="`)
-					r.Header.Set("Host", "example.com")
-					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
-					return r
-				})(),
-			},
-			want:        true,
-			wantErrType: hsErrType,
-			wantErrMsg:  "",
-		},
-		{
-			name: "Valid signature all headers test",
-			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(
-						http.MethodPost,
-						hsHostExampleFull,
-						strings.NewReader(hsBodyExample))
-					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,`+
-						`expires=1402170699,headers="(request-target) (created) (expires) host date content-type `+
-						`digest content-length",signature="nAkCW0wg9AbbStQRLi8fsS1mPPnA6S5+/0alANcoDFG9hG0bJ8NnMR`+
-						`cB1Sz1eccNMzzLEke7nGXqoiJYZFfT81oaRqh/MNFwQVX4OZvTLZ5xVZQuchRkOSO7b2QX0aFWFOUq6dnwAyliHr`+
-						`p6w3FOxwkGGJPaerw2lOYLdC/Bejk="`)
-					r.Header.Set("Host", "example.com")
-					r.Header.Set("Date", "Sun, 05 Jan 2014 21:31:40 GMT")
-					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
-					r.Header.Set("Content-Type", "application/json")
-					r.Header.Set("Content-length", "18")
-					return r
-				})(),
-			},
-			want:        true,
-			wantErrType: hsErrType,
-			wantErrMsg:  "",
-		},
-		{
-			name: "Parser error",
-			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(
-						http.MethodPost,
-						hsHostExampleFull,
-						strings.NewReader(hsBodyExample))
-					r.Header.Set("Signature", `keyId=Test"`)
-					return r
-				})(),
-			},
-			want:        false,
-			wantErrType: parserErrType,
-			wantErrMsg:  "ParserError: found 'T' — unsupported symbol, expected '\"' or space symbol",
-		},
-		{
-			name: "Digest error",
-			args: args{
-				r: (func() *http.Request {
-					r, _ := http.NewRequest(
-						http.MethodPost,
-						hsHostExampleFull,
-						strings.NewReader(hsBodyExample))
-					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",headers="digest",signature="xxx"`)
-					r.Header.Set("Digest", "XXX-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
-					return r
-				})(),
-			},
-			want:        false,
-			wantErrType: digestErrType,
-			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'XXX-256'",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hs := NewHTTPSignatures(ss)
-			err := hs.Verify(tt.args.r)
-			got := err == nil
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
@@ -336,7 +474,7 @@ func TestHSVerifyDigest(t *testing.T) {
 			name: "Digest verify OK",
 			args: args{
 				sh: []string{"digest"},
-				r:  getDigestRequestFunc(digestBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
+				r:  testGetDigestRequestFunc(testBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
 			},
 			want: true,
 		},
@@ -344,7 +482,7 @@ func TestHSVerifyDigest(t *testing.T) {
 			name: "Digest verify Fail",
 			args: args{
 				sh: []string{"digest"},
-				r:  getDigestRequestFunc(digestBodyExample, "MD5=MQ=="),
+				r:  testGetDigestRequestFunc(testBodyExample, "MD5=MQ=="),
 			},
 			want:        false,
 			wantErrType: "*httpsignatures.DigestError",
@@ -379,7 +517,7 @@ func TestHSCreateDigest(t *testing.T) {
 			name: "Digest create OK",
 			args: args{
 				sh:        []string{"digest"},
-				r:         getDigestRequestFunc(digestBodyExample, ""),
+				r:         testGetDigestRequestFunc(testBodyExample, ""),
 				digestErr: false,
 			},
 			want: "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew==",
@@ -388,7 +526,7 @@ func TestHSCreateDigest(t *testing.T) {
 			name: "No digest",
 			args: args{
 				sh:        []string{},
-				r:         getDigestRequestFunc(digestBodyExample, ""),
+				r:         testGetDigestRequestFunc(testBodyExample, ""),
 				digestErr: false,
 			},
 		},
@@ -396,7 +534,7 @@ func TestHSCreateDigest(t *testing.T) {
 			name: "Digest err",
 			args: args{
 				sh:        []string{"digest"},
-				r:         getDigestRequestFunc(digestBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
+				r:         testGetDigestRequestFunc(testBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
 				digestErr: true,
 			},
 			wantErrType: "*httpsignatures.DigestError",
@@ -416,7 +554,7 @@ func TestHSCreateDigest(t *testing.T) {
 	}
 }
 
-func TestSetDigestAlgorithm(t *testing.T) {
+func TestHSSetDigestAlgorithm(t *testing.T) {
 	hs := NewHTTPSignatures(NewSecretsStorage(map[string]Secret{}))
 	hs.SetDigestAlgorithm(testAlg{})
 	if _, ok := hs.d.alg[testAlgName]; ok == false {
@@ -424,15 +562,15 @@ func TestSetDigestAlgorithm(t *testing.T) {
 	}
 }
 
-func TestSetSignatureAlgorithm(t *testing.T) {
+func TestHSSetSignatureAlgorithm(t *testing.T) {
 	hs := NewHTTPSignatures(NewSecretsStorage(map[string]Secret{}))
 	hs.SetSignatureAlgorithm(RsaDummy{})
-	if _, ok := hs.alg[rsaDummyName]; ok == false {
+	if _, ok := hs.alg[testRsaDummyName]; ok == false {
 		t.Error("algorithm not found")
 	}
 }
 
-func TestSetDefaultExpiresSeconds(t *testing.T) {
+func TestHSSetDefaultExpiresSeconds(t *testing.T) {
 	var defaultExpiresSec int64 = 123
 	hs := NewHTTPSignatures(NewSecretsStorage(map[string]Secret{}))
 	hs.SetDefaultExpiresSeconds(defaultExpiresSec)
@@ -441,7 +579,7 @@ func TestSetDefaultExpiresSeconds(t *testing.T) {
 	}
 }
 
-func TestBuildSignatureHeader(t *testing.T) {
+func TestHSBuildSignatureHeader(t *testing.T) {
 	tests := []struct {
 		name string
 		arg  Headers

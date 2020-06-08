@@ -135,12 +135,6 @@ func (p *Parser) parseSignature(header string) (Headers, *ParserError) {
 		}
 	}
 
-	// 2.1.6 If not specified, implementations MUST operate as if the field were specified with a
-	// single value, `(created)`, in the list of HTTP headers.
-	if len(p.headers.headers) == 0 {
-		p.headers.headers = append(p.headers.headers, "(created)")
-	}
-
 	return p.headers, nil
 }
 

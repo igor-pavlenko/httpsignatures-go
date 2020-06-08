@@ -7,12 +7,76 @@ import (
 	"testing"
 )
 
-const digestBodyExample = `{"hello": "world"}`
-const digestHostExample = "https://example.com"
+const testBodyExample = `{"hello": "world"}`
+const testFullHostExample = "https://example.com"
+const testHostExampleShortPath = "https://example.com/foo"
+const testHostExampleFullPath = "https://example.com/foo?param=value&pet=dog"
+const testHostExample = "example.com"
+
+const testRsaPrivateKey1024 = `-----BEGIN RSA PRIVATE KEY-----
+MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
+NUd13wuCTUcq0Qd2qsBe/2hFyc2DCJJg0h1L78+6Z4UMR7EOcpfdUE9Hf3m/hs+F
+UR45uBJeDK1HSFHD8bHKD6kv8FPGfJTotc+2xjJwoYi+1hqp1fIekaxsyQIDAQAB
+AoGBAJR8ZkCUvx5kzv+utdl7T5MnordT1TvoXXJGXK7ZZ+UuvMNUCdN2QPc4sBiA
+QWvLw1cSKt5DsKZ8UETpYPy8pPYnnDEz2dDYiaew9+xEpubyeW2oH4Zx71wqBtOK
+kqwrXa/pzdpiucRRjk6vE6YY7EBBs/g7uanVpGibOVAEsqH1AkEA7DkjVH28WDUg
+f1nqvfn2Kj6CT7nIcE3jGJsZZ7zlZmBmHFDONMLUrXR/Zm3pR5m0tCmBqa5RK95u
+412jt1dPIwJBANJT3v8pnkth48bQo/fKel6uEYyboRtA5/uHuHkZ6FQF7OUkGogc
+mSJluOdc5t6hI1VsLn0QZEjQZMEOWr+wKSMCQQCC4kXJEsHAve77oP6HtG/IiEn7
+kpyUXRNvFsDE0czpJJBvL/aRFUJxuRK91jhjC68sA7NsKMGg5OXb5I5Jj36xAkEA
+gIT7aFOYBFwGgQAQkWNKLvySgKbAZRTeLBacpHMuQdl1DfdntvAyqpAZ0lY0RKmW
+G6aFKaqQfOXKCyWoUiVknQJAXrlgySFci/2ueKlIE1QqIiLSZ8V8OlpFLRnb1pzI
+7U1yQXnTAEFYM560yJlzUpOb1V4cScGd365tiSMvxLOvTA==
+-----END RSA PRIVATE KEY-----`
+
+const testRsaPrivateKey2048 = `-----BEGIN RSA PRIVATE KEY-----
+MIIEoQIBAAKCAQBmTcYuCg3VSpw/5/z9iL5R15E08RBM7N6GT5MeSUK6q2VQyM7c
+C6OmdyK0NZH3OoPliBPEk7+OSSmEgVzUiI5HVwC/sPtRqeqByrKi+8DUGNZo8fB4
+Rs7+NoMzqw28gIaYuXcLiLtoTWrobxRPNpqwz/nmWMWfJKTRBOERJBhLPEatVQ4o
+rBcQjFRXsAS4+6RuvDavJ3t5/iky2JNM6Dv2FomUlCGFjm1386eSSe8peLLx3hjk
++mqkKMSTMqWqdmYAhtPQZpUMdqSodw5SjtuVkBqs/nXt7vHlOp4mHv9fzB8xUN/h
+Hin8mnsFz8RWgfIv+hxKwpEht6A4++miB94HAgMBAAECggEAQj9k8VVTZeZ9zihl
+PKz7SbZFcroUKyxMYT9QbpFUY9svraOLyRTEcby+PWJfVnCPDukSm/5tUi9wcjzv
+JzYSpIHjmz55UIWutUPUcBSE5xP6bFUXultoGVill6TSLVoxTt7zBwYRDdbsPv4H
+cdBTVeIn2pFrz8WD8VKuiFIOZVEcYYEJJanARLPVJAZikQ4kZnvxPpmipX4YRyvZ
+wJ3HLjn9FtLicf7kR9RR+6bDEV6zbJNlFp61hTTzCai6ShpLZjoeEWG5Ad0pRP+6
+ZAAdrm/pz12bzWkl1qZEUssdDLNlRBbBlYijoO8Db2MxghgUMc4tHaYbAhEpntmW
+VRshMQKBgQC6hTDMG94nAHXsGTlGYWNUZfMnkjMbhi+2TDDhdJ+g90dHucL8QHb/
+bnTtXdWKFU6GFQg2NahE7snvZH/up3wUkIRJods0GIUhZnv91bPypJbFrJsP4bmj
+i/EvfWvzkjCfM/p6LsZ4x8QKyw/KGFiSSVeEDgTXvripOWztO94T2QKBgQCMaZgp
+nY2tYVvL4OU5ulf4d6F7xg49RcX7JHKwueDRHbk5zYvbttB3K+ewRSKctPEpBkWM
+oSusVE29+RE9VNTArhP4lHQXlf23DJPpYfdzO12Gches8aF2L8K4u9+Co2vxQMiC
+ls3kVnmsVntsHeE9bwbU/pifS+RDIWROnqC03wKBgFZxReVCgRmoP/6UzhONLQC/
+YwqS2jbGYLRm6TyD1Ts/fvyB3hkUM1I8OdqMY1vkdgj0FGMzSPHxjQryk8viOUI6
+m+SYK8QgHQsWuR4x/XzVxL6GOTMKFQPz5mpxASfYN8qAx3P626a8RmIOLBooYFwj
+u3iLGrl2PZTH9XCZD1o5AoGAbel2oBThw3ezqMt6BA9XL3tN4BqwKMyGZsooMSi/
+0FHpHVNGCI55bt/idDwaFPsa0BdFuAitrC8tz+i40v6lr9JUdcCXg6L4wSJKYmU6
+k2xEEKsc11cqId7PGVaPZq7QH0Cr9HVh5DzA7+Oep4pYN4PCoFZPWFrK6rWn1Fcd
+y5cCgYBW8CXDFEgjkCRgIgjpiJ4kMuBTboDBVRX4nz6j52hkiiDglIG3eSvqr0bj
+ujWUiQswHwpF91tUjm6zsZleLt+EjJyJTKVjN9mqJES6U4KcMYs0p0rulmTYnYUD
+UV6qwSI7mh5Q0ndPGiRg4ZgUkVI/JiiPuzXJ7MxF4OijXCzFHw==
+-----END RSA PRIVATE KEY-----`
+
+const testRsaPublicKey1024 = `-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDCFENGw33yGihy92pDjZQhl0C3
+6rPJj+CvfSC8+q28hxA161QFNUd13wuCTUcq0Qd2qsBe/2hFyc2DCJJg0h1L78+6
+Z4UMR7EOcpfdUE9Hf3m/hs+FUR45uBJeDK1HSFHD8bHKD6kv8FPGfJTotc+2xjJw
+oYi+1hqp1fIekaxsyQIDAQAB
+-----END PUBLIC KEY-----`
+
+const testRsaPublicKey2048 = `-----BEGIN PUBLIC KEY-----
+MIIBITANBgkqhkiG9w0BAQEFAAOCAQ4AMIIBCQKCAQBmTcYuCg3VSpw/5/z9iL5R
+15E08RBM7N6GT5MeSUK6q2VQyM7cC6OmdyK0NZH3OoPliBPEk7+OSSmEgVzUiI5H
+VwC/sPtRqeqByrKi+8DUGNZo8fB4Rs7+NoMzqw28gIaYuXcLiLtoTWrobxRPNpqw
+z/nmWMWfJKTRBOERJBhLPEatVQ4orBcQjFRXsAS4+6RuvDavJ3t5/iky2JNM6Dv2
+FomUlCGFjm1386eSSe8peLLx3hjk+mqkKMSTMqWqdmYAhtPQZpUMdqSodw5SjtuV
+kBqs/nXt7vHlOp4mHv9fzB8xUN/hHin8mnsFz8RWgfIv+hxKwpEht6A4++miB94H
+AgMBAAE=
+-----END PUBLIC KEY-----`
 
 var (
-	getDigestRequestFunc = func(b string, h string) *http.Request {
-		r, _ := http.NewRequest(http.MethodPost, digestHostExample, strings.NewReader(b))
+	testGetDigestRequestFunc = func(b string, h string) *http.Request {
+		r, _ := http.NewRequest(http.MethodPost, testFullHostExample, strings.NewReader(b))
 		if len(h) > 0 {
 			r.Header.Set("Digest", h)
 		}

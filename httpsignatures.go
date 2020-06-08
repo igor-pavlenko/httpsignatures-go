@@ -109,7 +109,7 @@ func (hs *HTTPSignatures) Verify(r *http.Request) error {
 	}
 	if !strings.EqualFold(secret.Algorithm, sh.algorithm) {
 		return &Error{
-			fmt.Sprintf("wrong algorithm '%s' for keyID '%s'", sh.algorithm, sh.keyID),
+			fmt.Sprintf("wrong algorithm '%s' for keyId '%s'", sh.algorithm, sh.keyID),
 			nil,
 		}
 	}
@@ -132,6 +132,7 @@ func (hs *HTTPSignatures) Verify(r *http.Request) error {
 	if err != nil {
 		return &Error{"build signature string error", err}
 	}
+	// @todo: Validate headers param.
 	if len(sigStr) == 0 {
 		return &Error{"empty string for signature", nil}
 	}
@@ -157,7 +158,7 @@ func (hs *HTTPSignatures) Sign(secretKeyID string, r *http.Request) error {
 	// Get secret
 	secret, err := hs.ss.Get(secretKeyID)
 	if err != nil {
-		return &Error{fmt.Sprintf("keyID '%s' not found", secretKeyID), err}
+		return &Error{fmt.Sprintf("keyId '%s' not found", secretKeyID), err}
 	}
 
 	// Get hash algorithm

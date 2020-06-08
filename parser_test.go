@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-const parserErrType = "*httpsignatures.ParserError"
-const validSignatureHeader = `keyId="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="` +
+const testParserErrType = "*httpsignatures.ParserError"
+const testValidSignatureHeader = `keyId="Test",algorithm="rsa-sha256",created=1402170695,expires=1402170699,headers="` +
 	`(request-target) (created) (expires) host date digest content-length",signature="vSdrb+dS3EceC9bcwHSo4MlyKS5` +
 	`9iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gW` +
 	`xpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`
 
-var validParsedSignatureHeader = Headers{
+var testValidParsedSignatureHeader = Headers{
 	keyID:     "Test",
 	algorithm: "rsa-sha256",
 	created:   time.Unix(1402170695, 0),
@@ -21,8 +21,6 @@ var validParsedSignatureHeader = Headers{
 	signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01" +
 		"IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
 }
-
-var validHeadersIfNotSpecified = []string{"(created)"}
 
 func TestNew(t *testing.T) {
 	tests := []struct {
@@ -62,7 +60,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: ``,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: empty header",
 		},
 		{
@@ -71,19 +69,18 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `  `,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: unexpected end of header, expected parameter",
 		},
 		{
-			name: "Only keyID",
+			name: "Only keyId",
 			args: args{
 				header: `keyId="v1"`,
 			},
 			want: Headers{
-				keyID:   "v1",
-				headers: validHeadersIfNotSpecified,
+				keyID: "v1",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -93,9 +90,8 @@ func TestParserParseSingleFields(t *testing.T) {
 			},
 			want: Headers{
 				algorithm: "v2",
-				headers:   validHeadersIfNotSpecified,
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -106,7 +102,7 @@ func TestParserParseSingleFields(t *testing.T) {
 			want: Headers{
 				headers: []string{"(request-target)", "(created)"},
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -116,9 +112,8 @@ func TestParserParseSingleFields(t *testing.T) {
 			},
 			want: Headers{
 				signature: "test",
-				headers:   validHeadersIfNotSpecified,
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -135,7 +130,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				headers:   []string{"v-3", "v-4"},
 				signature: "v5",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -152,7 +147,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				headers:   []string{"v-3", "v-4"},
 				signature: "v5",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -169,7 +164,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				headers:   []string{"v-3", "v-4"},
 				signature: "v5",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -178,7 +173,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId-="v1"`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: found '-' — unsupported symbol in key",
 		},
 		{
@@ -187,7 +182,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId :"v1"`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: found ':' — unsupported symbol, expected '=' or space symbol",
 		},
 		{
@@ -196,7 +191,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId= 'v1'`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: found ''' — unsupported symbol, expected '\"' or space symbol",
 		},
 		{
@@ -204,10 +199,8 @@ func TestParserParseSingleFields(t *testing.T) {
 			args: args{
 				header: `key="v1"`,
 			},
-			want: Headers{
-				headers: validHeadersIfNotSpecified,
-			},
-			wantErrType: parserErrType,
+			want:        Headers{},
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -216,7 +209,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: unexpected end of header, expected '=' symbol and field value",
 		},
 		{
@@ -225,7 +218,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId `,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: unexpected end of header, expected field value",
 		},
 		{
@@ -234,7 +227,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId= `,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: unexpected end of header, expected '\"' symbol and field value",
 		},
 		{
@@ -243,7 +236,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId="`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: unexpected end of header, expected '\"' symbol",
 		},
 		{
@@ -252,7 +245,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId=""`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: empty value for key 'keyId'",
 		},
 		{
@@ -261,7 +254,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId="v1" algorithm="v2"`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: found 'a' — unsupported symbol, expected ',' or space symbol",
 		},
 	}
@@ -293,9 +286,8 @@ func TestParserParseCreatedExpires(t *testing.T) {
 			},
 			want: Headers{
 				created: time.Unix(1402170695, 0),
-				headers: validHeadersIfNotSpecified,
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -305,9 +297,8 @@ func TestParserParseCreatedExpires(t *testing.T) {
 			},
 			want: Headers{
 				expires: time.Unix(1402170699, 0),
-				headers: validHeadersIfNotSpecified,
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -316,7 +307,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 				header: `created=9223372036854775807`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg: "ParserError: wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775807\"" +
 				": value out of range",
 		},
@@ -326,7 +317,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 				header: `created=9223372036854775808 `,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg: "ParserError: wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775808\"" +
 				": value out of range",
 		},
@@ -336,7 +327,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 				header: `created=9223372036854775809,`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg: "ParserError: wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775809\"" +
 				": value out of range",
 		},
@@ -346,7 +337,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 				header: `expires=9223372036854775807`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg: "ParserError: wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775807\"" +
 				": value out of range",
 		},
@@ -356,7 +347,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 				header: `expires=9223372036854775808 `,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg: "ParserError: wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775808\"" +
 				": value out of range",
 		},
@@ -366,7 +357,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 				header: `expires=9223372036854775809,`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg: "ParserError: wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775809\"" +
 				": value out of range",
 		},
@@ -395,10 +386,10 @@ func TestParserParseSignature(t *testing.T) {
 		{
 			name: "Signature",
 			args: args{
-				header: validSignatureHeader,
+				header: testValidSignatureHeader,
 			},
-			want:        validParsedSignatureHeader,
-			wantErrType: parserErrType,
+			want:        testValidParsedSignatureHeader,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 	}
@@ -428,7 +419,7 @@ func TestParserParseSignatureFailed(t *testing.T) {
 				header: `keyId="Test"`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: unexpected parser stage",
 		},
 	}
@@ -458,7 +449,7 @@ func TestParserParseDigestFailed(t *testing.T) {
 				header: `MD5=test`,
 			},
 			want:        DigestHeader{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: unexpected parser stage",
 		},
 	}
@@ -488,10 +479,9 @@ func TestParserParseAmbiguousParams(t *testing.T) {
 				header: `keyId="v1",ambiguous="v2",digest="v3"`,
 			},
 			want: Headers{
-				keyID:   "v1",
-				headers: validHeadersIfNotSpecified,
+				keyID: "v1",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 	}
@@ -516,12 +506,12 @@ func TestParserParseDuplicateParams(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name: "Duplicate keyID",
+			name: "Duplicate keyId",
 			args: args{
 				header: `keyId="v1",keyId="v2"`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: duplicate param 'keyId'",
 		},
 		{
@@ -530,7 +520,7 @@ func TestParserParseDuplicateParams(t *testing.T) {
 				header: `algorithm="v1",algorithm="v2"`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: duplicate param 'algorithm'",
 		},
 		{
@@ -539,7 +529,7 @@ func TestParserParseDuplicateParams(t *testing.T) {
 				header: `created=1402170695,created=1402170695`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: duplicate param 'created'",
 		},
 		{
@@ -548,7 +538,7 @@ func TestParserParseDuplicateParams(t *testing.T) {
 				header: `expires=1402170699,expires=1402170699`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: duplicate param 'expires'",
 		},
 		{
@@ -557,7 +547,7 @@ func TestParserParseDuplicateParams(t *testing.T) {
 				header: `headers="v1",headers="v2"`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: duplicate param 'headers'",
 		},
 		{
@@ -566,7 +556,7 @@ func TestParserParseDuplicateParams(t *testing.T) {
 				header: `signature="v1",signature="v2"`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: duplicate param 'signature'",
 		},
 	}
@@ -597,10 +587,9 @@ func TestNotSpecifiedHeadersParams(t *testing.T) {
 				header: `keyId="v1"`,
 			},
 			want: Headers{
-				keyID:   "v1",
-				headers: []string{"(created)"},
+				keyID: "v1",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -609,7 +598,7 @@ func TestNotSpecifiedHeadersParams(t *testing.T) {
 				header: `keyId="v1",headers=""`,
 			},
 			want:        Headers{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: empty value for key 'headers'",
 		},
 	}
@@ -642,7 +631,7 @@ func TestParserParseDigestHeader(t *testing.T) {
 				algo:   "MD5",
 				digest: "ZDk5NTk4ODgxNjM3MDc5MDQ2MTgzNDQwMzExMThiZWI=",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -654,7 +643,7 @@ func TestParserParseDigestHeader(t *testing.T) {
 				algo:   "SHA-1",
 				digest: "ZDNiMDlhYmUzMGNmZTJlZGZmNGVlOWUwYTE0MWM5M2JmNWIzYWY4Nw==",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -667,14 +656,14 @@ func TestParserParseDigestHeader(t *testing.T) {
 				algo:   "SHA-256",
 				digest: "NWY4ZjA0ZjZhM2E4OTJhYWFiYmRkYjZjZjI3Mzg5NDQ5Mzc3Mzk2MGQ0YTMyNWIxMDVmZWU0NmVlZjQzMDRmMQ==",
 			},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 		{
 			name:        "Empty Digest header",
 			args:        args{},
 			want:        DigestHeader{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: empty digest header",
 		},
 		{
@@ -683,7 +672,7 @@ func TestParserParseDigestHeader(t *testing.T) {
 				header: `md5`,
 			},
 			want:        DigestHeader{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: unexpected end of header, expected digest value",
 		},
 		{
@@ -692,7 +681,7 @@ func TestParserParseDigestHeader(t *testing.T) {
 				header: `md 5=`,
 			},
 			want:        DigestHeader{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: found ' ' — unsupported symbol in algorithm",
 		},
 		{
@@ -701,7 +690,7 @@ func TestParserParseDigestHeader(t *testing.T) {
 				header: `MD5=`,
 			},
 			want:        DigestHeader{},
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: empty digest value",
 		},
 	}
@@ -726,12 +715,12 @@ func TestVerifySignatureFields(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name: "No keyID",
+			name: "No keyId",
 			args: args{
 				header: `algorithm="v1",headers="v-2",signature="v3"`,
 			},
 			want:        false,
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: keyId is not set in header",
 		},
 		{
@@ -740,16 +729,16 @@ func TestVerifySignatureFields(t *testing.T) {
 				header: `keyId="v1",headers="v-2"`,
 			},
 			want:        false,
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: signature is not set in header",
 		},
 		{
 			name: "OK",
 			args: args{
-				header: validSignatureHeader,
+				header: testValidSignatureHeader,
 			},
 			want:        true,
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "",
 		},
 	}

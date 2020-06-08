@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-const secretErrType = "*httpsignatures.SecretError"
+const testSecretErrType = "*httpsignatures.SecretError"
 
 func TestNewSecretsStorage(t *testing.T) {
 	storageExample := map[string]Secret{
@@ -78,7 +78,7 @@ func TestSecretsStorageGet(t *testing.T) {
 				keyID: "k1",
 			},
 			want:        storageExample["k1"],
-			wantErrType: secretErrType,
+			wantErrType: testSecretErrType,
 			wantErrMsg:  "",
 		},
 		{
@@ -87,7 +87,7 @@ func TestSecretsStorageGet(t *testing.T) {
 				keyID: "k2",
 			},
 			want:        Secret{},
-			wantErrType: secretErrType,
+			wantErrType: testSecretErrType,
 			wantErrMsg:  "SecretError: secret not found",
 		},
 	}

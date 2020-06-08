@@ -6,11 +6,10 @@ import (
 	"testing"
 )
 
-const digestErrType = "*httpsignatures.DigestError"
+const testDigestErrType = "*httpsignatures.DigestError"
+const testAlgName = "TEST"
 
 type testAlg struct{}
-
-const testAlgName = "TEST"
 
 func (a testAlg) Algorithm() string {
 	return testAlgName
@@ -52,72 +51,72 @@ func TestVerifyDigest(t *testing.T) {
 		{
 			name: "Valid MD5 digest",
 			args: args{
-				r: getDigestRequestFunc(digestBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
+				r: testGetDigestRequestFunc(testBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
 			},
 			want:        true,
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 			wantErrMsg:  "",
 		},
 		{
 			name: "Valid SHA-256 digest",
 			args: args{
-				r: getDigestRequestFunc(digestBodyExample, "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
+				r: testGetDigestRequestFunc(testBodyExample, "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
 			},
 			want:        true,
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 		},
 		{
 			name: "Valid SHA-512 digest",
 			args: args{
-				r: getDigestRequestFunc(digestBodyExample, "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+"+
+				r: testGetDigestRequestFunc(testBodyExample, "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+"+
 					"AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew=="),
 			},
 			want:        true,
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 		},
 		{
 			name: "Invalid MD5 digest (decode error)",
 			args: args{
-				r: getDigestRequestFunc(digestBodyExample, "MD5=123456"),
+				r: testGetDigestRequestFunc(testBodyExample, "MD5=123456"),
 			},
 			want:        false,
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 			wantErrMsg:  "DigestError: error decode digest from base64: illegal base64 data at input byte 4",
 		},
 		{
 			name: "Invalid MD5 wrong digest",
 			args: args{
-				r: getDigestRequestFunc(digestBodyExample, "MD5=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
+				r: testGetDigestRequestFunc(testBodyExample, "MD5=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="),
 			},
 			want:        false,
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 			wantErrMsg:  "DigestError: wrong digest: CryptoError: wrong hash",
 		},
 		{
 			name: "Invalid digest header",
 			args: args{
-				r: getDigestRequestFunc(digestBodyExample, "SHA-512="),
+				r: testGetDigestRequestFunc(testBodyExample, "SHA-512="),
 			},
 			want:        false,
-			wantErrType: parserErrType,
+			wantErrType: testParserErrType,
 			wantErrMsg:  "ParserError: empty digest value",
 		},
 		{
 			name: "Unsupported digest hash algorithm",
 			args: args{
-				r: getDigestRequestFunc(digestBodyExample, "SHA-0=test"),
+				r: testGetDigestRequestFunc(testBodyExample, "SHA-0=test"),
 			},
 			want:        false,
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'SHA-0'",
 		},
 		{
 			name: "Empty body",
 			args: args{
-				r: getDigestRequestFunc("", "MD5=xxx"),
+				r: testGetDigestRequestFunc("", "MD5=xxx"),
 			},
 			want:        false,
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 			wantErrMsg:  "DigestError: empty body",
 		},
 	}
@@ -147,7 +146,7 @@ func TestCreateDigest(t *testing.T) {
 			name: "Valid MD5 digest",
 			args: args{
 				algo: "MD5",
-				r:    getDigestRequestFunc(digestBodyExample, ""),
+				r:    testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "MD5=Sd/dVLAcvNLSq16eXua5uQ==",
 			wantErrType: "",
@@ -157,20 +156,20 @@ func TestCreateDigest(t *testing.T) {
 			name: "Unsupported digest algo",
 			args: args{
 				algo: "MD4",
-				r:    getDigestRequestFunc(digestBodyExample, ""),
+				r:    testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "",
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'MD4'",
 		},
 		{
 			name: "Create digest error",
 			args: args{
 				algo: "ERR",
-				r:    getDigestRequestFunc(digestBodyExample, ""),
+				r:    testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "",
-			wantErrType: digestErrType,
+			wantErrType: testDigestErrType,
 			wantErrMsg:  "DigestError: error creating digest hash 'ERR': create hash error",
 		},
 	}
