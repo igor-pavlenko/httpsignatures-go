@@ -10,6 +10,23 @@ import (
 
 const testHSErrType = "*httpsignatures.Error"
 
+var testSecretsStorage = NewSecretsStorage(map[string]Secret{
+	"Test": {
+		KeyID:      "Test",
+		PrivateKey: testRsaPrivateKey1024,
+		PublicKey:  testRsaPublicKey1024,
+		Algorithm:  "RSA-SHA256",
+	},
+	"NotSupported": {
+		KeyID:     "NotSupported",
+		Algorithm: testRsaDummyName,
+	},
+	"Err": {
+		KeyID:     "Err",
+		Algorithm: testRsaErrName,
+	},
+})
+
 func TestNewHttpSignatures(t *testing.T) {
 	ss := NewSecretsStorage(map[string]Secret{
 		"key1": {
@@ -52,18 +69,6 @@ func TestNewHttpSignatures(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
-	ss := NewSecretsStorage(map[string]Secret{
-		"Test": {
-			KeyID:      "Test",
-			PrivateKey: testRsaPrivateKey1024,
-			PublicKey:  testRsaPublicKey1024,
-			Algorithm:  "RSA-SHA256",
-		},
-		"NotSupported": {
-			KeyID:     "NotSupported",
-			Algorithm: "Dummy",
-		},
-	})
 	type args struct {
 		r *http.Request
 	}
@@ -209,14 +214,14 @@ func TestVerify(t *testing.T) {
 						http.MethodPost,
 						testHostExampleFullPath,
 						strings.NewReader(testBodyExample))
-					r.Header.Set("Signature", `keyId="NotSupported",algorithm="Dummy",headers="host",`+
+					r.Header.Set("Signature", `keyId="NotSupported",algorithm="rsa-dummy",headers="host",`+
 						`signature="MTIz"`)
 					return r
 				})(),
 			},
 			want:        false,
 			wantErrType: testHSErrType,
-			wantErrMsg:  "algorithm 'Dummy' not supported",
+			wantErrMsg:  "algorithm 'rsa-dummy' not supported",
 		},
 		{
 			name: "Digest error",
@@ -308,10 +313,151 @@ func TestVerify(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hs := NewHTTPSignatures(ss)
+			hs := NewHTTPSignatures(testSecretsStorage)
 			err := hs.Verify(tt.args.r)
 			got := err == nil
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestSign(t *testing.T) {
+	type args struct {
+		secretKeyID    string
+		r              *http.Request
+		defaultDigest  string
+		defaultHeaders []string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        bool
+		wantHeader  string
+		wantErrType string
+		wantErrMsg  string
+	}{
+		{
+			name: "Secret key not found",
+			args: args{
+				secretKeyID: "NotFound",
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					return r
+				})(),
+			},
+			want:        false,
+			wantHeader:  "",
+			wantErrType: testHSErrType,
+			wantErrMsg:  "keyId 'NotFound' not found: SecretError: secret not found",
+		},
+		{
+			name: "Not supported algorithm for secret key",
+			args: args{
+				secretKeyID: "NotSupported",
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					return r
+				})(),
+			},
+			want:        false,
+			wantHeader:  "",
+			wantErrType: testHSErrType,
+			wantErrMsg:  "algorithm 'RSA-DUMMY' not supported",
+		},
+		{
+			name: "Create digest error",
+			args: args{
+				secretKeyID: "Test",
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					return r
+				})(),
+				defaultDigest:  testErrAlgName,
+				defaultHeaders: []string{"digest"},
+			},
+			want:        false,
+			wantHeader:  "",
+			wantErrType: testDigestErrType,
+			wantErrMsg:  "DigestError: error creating digest hash 'ERR': create hash error",
+		},
+		{
+			name: "Build signature string error",
+			args: args{
+				secretKeyID: "Test",
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					return r
+				})(),
+				defaultHeaders: []string{"test"},
+			},
+			want:        false,
+			wantHeader:  "",
+			wantErrType: testHSErrType,
+			wantErrMsg:  "build signature string error: header 'test', required in signature, not found",
+		},
+		{
+			name: "Create signature error",
+			args: args{
+				secretKeyID: "Err",
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					return r
+				})(),
+			},
+			want:        false,
+			wantHeader:  "",
+			wantErrType: testHSErrType,
+			wantErrMsg:  "error creating signature: create error",
+		},
+		{
+			name: "Create signature OK",
+			args: args{
+				secretKeyID: "Test",
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					return r
+				})(),
+			},
+			want:       true,
+			wantHeader: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hs := NewHTTPSignatures(testSecretsStorage)
+			hs.SetDigestAlgorithm(testErrAlg{})
+			hs.SetSignatureAlgorithm(TestRsaErr{})
+			if len(tt.args.defaultDigest) > 0 {
+				_ = hs.SetDefaultDigestAlgorithm(tt.args.defaultDigest)
+			}
+			if len(tt.args.defaultHeaders) > 0 {
+				hs.SetDefaultSignatureHeaders(tt.args.defaultHeaders)
+			}
+			err := hs.Sign(tt.args.secretKeyID, tt.args.r)
+			got := err == nil
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+			gotHeader := tt.args.r.Header.Get(signatureHeader)
+			if gotHeader != tt.wantHeader {
+				t.Errorf(tt.name+"\ngot header  = %v,\nwant header = %v", gotHeader, tt.wantHeader)
+			}
 		})
 	}
 }
@@ -545,7 +691,7 @@ func TestHSCreateDigest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hs := NewHTTPSignatures(ss)
 			if tt.args.digestErr {
-				hs.SetDigestAlgorithm(errAlg{})
+				hs.SetDigestAlgorithm(testErrAlg{})
 				_ = hs.SetDefaultDigestAlgorithm("ERR")
 			}
 			got, err := hs.createDigest(tt.args.sh, tt.args.r)
@@ -607,5 +753,14 @@ func TestHSBuildSignatureHeader(t *testing.T) {
 				t.Errorf("wrong signature header\ngot  = %v,\nwant = %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestHSSetDefaultSignatureHeaders(t *testing.T) {
+	defaultHeaders := []string{"host", "digest"}
+	hs := NewHTTPSignatures(NewSecretsStorage(map[string]Secret{}))
+	hs.SetDefaultSignatureHeaders(defaultHeaders)
+	if !reflect.DeepEqual(hs.defaultHeaders, defaultHeaders) {
+		t.Errorf("got headers  = %v,\nwant headers = %v", hs.defaultHeaders, defaultHeaders)
 	}
 }

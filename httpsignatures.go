@@ -18,6 +18,9 @@ const (
 	expires         = "(expires)"
 )
 
+// Default expires param value (seconds)
+const defaultExpiresSec = 30
+
 // Error errors during validating or creating Signature|Authorization
 type Error struct {
 	Message string
@@ -41,6 +44,7 @@ type HTTPSignatures struct {
 	d                 *Digest
 	alg               map[string]SignatureHashAlgorithm
 	defaultExpiresSec int64
+	defaultHeaders    []string
 }
 
 // NewHTTPSignatures Constructor
@@ -56,7 +60,8 @@ func NewHTTPSignatures(ss *SecretsStorage) *HTTPSignatures {
 		algoHmacSha256:      HmacSha256{},
 		algoHmacSha512:      HmacSha512{},
 	}
-	hs.defaultExpiresSec = 30
+	hs.defaultExpiresSec = defaultExpiresSec
+	hs.defaultHeaders = []string{"(created)"}
 	return hs
 }
 
@@ -70,15 +75,20 @@ func (hs *HTTPSignatures) SetDefaultDigestAlgorithm(a string) error {
 	return hs.d.SetDefaultDigestHashAlgorithm(a)
 }
 
-// SetSignatureAlgorithm set custom signature hash algorithm
-func (hs *HTTPSignatures) SetSignatureAlgorithm(a SignatureHashAlgorithm) {
-	hs.alg[strings.ToUpper(a.Algorithm())] = a
-}
-
 // SetDefaultExpiresSeconds set default expires seconds (while creating signature).
 // If set to 0 — signature never expires
 func (hs *HTTPSignatures) SetDefaultExpiresSeconds(e int64) {
 	hs.defaultExpiresSec = e
+}
+
+// SetDefaultSignatureHeaders set default list of headers to create signature (Sign method)
+func (hs *HTTPSignatures) SetDefaultSignatureHeaders(h []string) {
+	hs.defaultHeaders = h
+}
+
+// SetSignatureAlgorithm set custom signature hash algorithm
+func (hs *HTTPSignatures) SetSignatureAlgorithm(a SignatureHashAlgorithm) {
+	hs.alg[strings.ToUpper(a.Algorithm())] = a
 }
 
 // Verify Verify signature
@@ -176,7 +186,7 @@ func (hs *HTTPSignatures) Sign(secretKeyID string, r *http.Request) error {
 		algorithm: secret.Algorithm,
 		created:   time.Now(),
 		expires:   time.Time{},
-		headers:   []string{"(request-target)", "(created)"}, // => options
+		headers:   hs.defaultHeaders,
 	}
 	// Expires
 	if hs.defaultExpiresSec != 0 {
@@ -191,7 +201,10 @@ func (hs *HTTPSignatures) Sign(secretKeyID string, r *http.Request) error {
 		r.Header.Set(digestHeader, d)
 	}
 
-	sigStr, _ := hs.buildSignatureString(headers, r)
+	sigStr, err := hs.buildSignatureString(headers, r)
+	if err != nil {
+		return &Error{"build signature string error", err}
+	}
 
 	// Create signature
 	s, err := alg.Create(secret, sigStr)

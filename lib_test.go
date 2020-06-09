@@ -1,6 +1,9 @@
 package httpsignatures
 
 import (
+	"crypto"
+	"crypto/sha256"
+	"errors"
 	"net/http"
 	"reflect"
 	"strings"
@@ -83,6 +86,77 @@ var (
 		return r
 	}
 )
+
+const (
+	testAlgName = "TEST"
+	testErrAlgName = "ERR"
+	testRsaDummyName = "RSA-DUMMY"
+	testRsaErrName = "RSA-ERR"
+)
+
+type testAlg struct{}
+
+func (a testAlg) Algorithm() string {
+	return testAlgName
+}
+
+func (a testAlg) Create(data []byte) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (a testAlg) Verify(data []byte, digest []byte) error {
+	return nil
+}
+
+type testErrAlg struct{}
+
+func (a testErrAlg) Algorithm() string {
+	return testErrAlgName
+}
+
+func (a testErrAlg) Create(data []byte) ([]byte, error) {
+	return []byte{}, errors.New("create hash error")
+}
+
+func (a testErrAlg) Verify(data []byte, digest []byte) error {
+	return errors.New("verify hash error")
+}
+
+// RsaDummy RSA-DUMMY Algorithm
+type RsaDummy struct{}
+
+// Algorithm Return algorithm name
+func (a RsaDummy) Algorithm() string {
+	return testRsaDummyName
+}
+
+// Create Create dummy
+func (a RsaDummy) Create(secret Secret, data []byte) ([]byte, error) {
+	return signatureRsaAlgorithmCreate(testRsaDummyName, sha256.New, crypto.SHA256, secret, data)
+}
+
+// Verify Verify dummy
+func (a RsaDummy) Verify(secret Secret, data []byte, signature []byte) error {
+	return signatureRsaAlgorithmVerify(testRsaDummyName, sha256.New, crypto.SHA256, secret, data, signature)
+}
+
+// RsaDummy RSA-DUMMY Algorithm
+type TestRsaErr struct{}
+
+// Algorithm Return algorithm name
+func (a TestRsaErr) Algorithm() string {
+	return testRsaErrName
+}
+
+// Create Create dummy
+func (a TestRsaErr) Create(secret Secret, data []byte) ([]byte, error) {
+	return nil, errors.New("create error")
+}
+
+// Verify Verify dummy
+func (a TestRsaErr) Verify(secret Secret, data []byte, signature []byte) error {
+	return errors.New("verify error")
+}
 
 func assert(t *testing.T, got interface{}, err error, eType string, name string, want interface{}, wantErrMsg string) {
 	if err != nil && reflect.TypeOf(err).String() != eType {

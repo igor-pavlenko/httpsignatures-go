@@ -1,41 +1,11 @@
 package httpsignatures
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 )
 
 const testDigestErrType = "*httpsignatures.DigestError"
-const testAlgName = "TEST"
-
-type testAlg struct{}
-
-func (a testAlg) Algorithm() string {
-	return testAlgName
-}
-
-func (a testAlg) Create(data []byte) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (a testAlg) Verify(data []byte, digest []byte) error {
-	return nil
-}
-
-type errAlg struct{}
-
-func (a errAlg) Algorithm() string {
-	return "ERR"
-}
-
-func (a errAlg) Create(data []byte) ([]byte, error) {
-	return []byte{}, errors.New("create hash error")
-}
-
-func (a errAlg) Verify(data []byte, digest []byte) error {
-	return errors.New("verify hash error")
-}
 
 func TestVerifyDigest(t *testing.T) {
 	type args struct {
@@ -176,7 +146,7 @@ func TestCreateDigest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := NewDigest()
-			d.SetDigestHashAlgorithm(errAlg{})
+			d.SetDigestHashAlgorithm(testErrAlg{})
 			got, err := d.Create(tt.args.algo, tt.args.r)
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})

@@ -1,8 +1,6 @@
 package httpsignatures
 
 import (
-	"crypto"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"testing"
@@ -10,25 +8,6 @@ import (
 
 const testCryptoErrType = "*httpsignatures.CryptoError"
 const testHashData = "hello world"
-const testRsaDummyName = "RSA-DUMMY"
-
-// RsaDummy RSA-DUMMY Algorithm
-type RsaDummy struct{}
-
-// Algorithm Return algorithm name
-func (a RsaDummy) Algorithm() string {
-	return testRsaDummyName
-}
-
-// Create Create dummy
-func (a RsaDummy) Create(secret Secret, data []byte) ([]byte, error) {
-	return signatureRsaAlgorithmCreate(testRsaDummyName, sha256.New, crypto.SHA256, secret, data)
-}
-
-// Verify Verify dummy
-func (a RsaDummy) Verify(secret Secret, data []byte, signature []byte) error {
-	return signatureRsaAlgorithmVerify(testRsaDummyName, sha256.New, crypto.SHA256, secret, data, signature)
-}
 
 func TestHashAlgorithm(t *testing.T) {
 	tests := []struct {
