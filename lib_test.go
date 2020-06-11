@@ -16,7 +16,8 @@ const testHostExamplePath = "https://example.com/foo"
 const testHostExampleFullPath = "https://example.com/foo?param=value&pet=dog"
 const testHostExample = "example.com"
 const testDateExample = "Sun, 05 Jan 2014 21:31:40 GMT"
-const testContentTypeJson = "application/json"
+const testContentTypeHeader = "Content-Type"
+const testContentTypeJSON = "application/json"
 
 const testRsaPrivateKey1024 = `-----BEGIN RSA PRIVATE KEY-----
 MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF

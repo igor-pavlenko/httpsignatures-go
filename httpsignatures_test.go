@@ -101,7 +101,7 @@ func TestVerify(t *testing.T) {
 					r.Header.Set("Host", testHostExample)
 					r.Header.Set("Date", testDateExample)
 					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
-					r.Header.Set("Content-Type", testContentTypeJson)
+					r.Header.Set(testContentTypeHeader, testContentTypeJSON)
 					r.Header.Set("Content-length", "18")
 					return r
 				})(),
@@ -113,10 +113,7 @@ func TestVerify(t *testing.T) {
 		{
 			name: "No Signature header",
 			args: args{
-				r: (func() *http.Request {
-					r := testGetRequest()
-					return r
-				})(),
+				r: testGetRequest(),
 			},
 			want:        false,
 			wantErrType: testHSErrType,
@@ -293,13 +290,9 @@ func TestSign(t *testing.T) {
 			name: "Secret key not found",
 			args: args{
 				secretKeyID: "NotFound",
-				r: (func() *http.Request {
-					r := testGetRequest()
-					return r
-				})(),
+				r: testGetRequest(),
 			},
 			want:        false,
-			wantHeader:  "",
 			wantErrType: testHSErrType,
 			wantErrMsg:  "keyId 'NotFound' not found: SecretError: secret not found",
 		},
@@ -307,13 +300,9 @@ func TestSign(t *testing.T) {
 			name: "Not supported algorithm for secret key",
 			args: args{
 				secretKeyID: "NotSupported",
-				r: (func() *http.Request {
-					r := testGetRequest()
-					return r
-				})(),
+				r: testGetRequest(),
 			},
 			want:        false,
-			wantHeader:  "",
 			wantErrType: testHSErrType,
 			wantErrMsg:  "algorithm 'RSA-DUMMY' not supported",
 		},
@@ -321,15 +310,11 @@ func TestSign(t *testing.T) {
 			name: "Create digest error",
 			args: args{
 				secretKeyID: "Test",
-				r: (func() *http.Request {
-					r := testGetRequest()
-					return r
-				})(),
+				r: testGetRequest(),
 				defaultDigest:  testErrAlgName,
 				defaultHeaders: []string{"digest"},
 			},
 			want:        false,
-			wantHeader:  "",
 			wantErrType: testDigestErrType,
 			wantErrMsg:  "DigestError: error creating digest hash 'ERR': create hash error",
 		},
@@ -337,14 +322,10 @@ func TestSign(t *testing.T) {
 			name: "Build signature string error",
 			args: args{
 				secretKeyID: "Test",
-				r: (func() *http.Request {
-					r := testGetRequest()
-					return r
-				})(),
+				r: testGetRequest(),
 				defaultHeaders: []string{"test"},
 			},
 			want:        false,
-			wantHeader:  "",
 			wantErrType: testHSErrType,
 			wantErrMsg:  "build signature string error: header 'test', required in signature, not found",
 		},
@@ -352,13 +333,9 @@ func TestSign(t *testing.T) {
 			name: "Create signature error",
 			args: args{
 				secretKeyID: "Err",
-				r: (func() *http.Request {
-					r := testGetRequest()
-					return r
-				})(),
+				r: testGetRequest(),
 			},
 			want:        false,
-			wantHeader:  "",
 			wantErrType: testHSErrType,
 			wantErrMsg:  "error creating signature: create error",
 		},
@@ -368,7 +345,7 @@ func TestSign(t *testing.T) {
 				secretKeyID: "Test",
 				r: (func() *http.Request {
 					r := testGetRequest()
-					r.Header.Set("Content-Type", testContentTypeJson)
+					r.Header.Set(testContentTypeHeader, testContentTypeJSON)
 					r.Header.Set("Server", "nginx")
 					return r
 				})(),
@@ -419,7 +396,7 @@ func TestHSCrossCheck(t *testing.T) {
 				secretKeyID: "Test",
 				r: (func() *http.Request {
 					r := testGetRequest()
-					r.Header.Set("Content-Type", testContentTypeJson)
+					r.Header.Set(testContentTypeHeader, testContentTypeJSON)
 					return r
 				})(),
 				defaultHeaders: []string{requestTarget, "content-type"},
@@ -430,10 +407,7 @@ func TestHSCrossCheck(t *testing.T) {
 			name: "Sign & Verify with default headers OK",
 			args: args{
 				secretKeyID: "Test",
-				r: (func() *http.Request {
-					r := testGetRequest()
-					return r
-				})(),
+				r: testGetRequest(),
 			},
 			want: true,
 		},
@@ -490,7 +464,7 @@ func TestHSBuildSignatureString(t *testing.T) {
 					r, _ := http.NewRequest(http.MethodPost, testHostExamplePath, strings.NewReader(testBodyExample))
 					r.Header.Set("Host", testHostExample)
 					r.Header.Set("Date", testDateExample)
-					r.Header.Set("Content-Type", testContentTypeJson)
+					r.Header.Set(testContentTypeHeader, testContentTypeJSON)
 					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
 					r.Header.Set("Content-Length", "18")
 					return r
