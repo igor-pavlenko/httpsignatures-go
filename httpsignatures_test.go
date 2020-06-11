@@ -433,11 +433,16 @@ func TestSign(t *testing.T) {
 						http.MethodPost,
 						testHostExampleFullPath,
 						strings.NewReader(testBodyExample))
+					r.Header.Set("Content-Type", "application/json")
+					r.Header.Set("Server", "nginx")
 					return r
 				})(),
+				defaultHeaders: []string{requestTarget, "content-type", "server"},
 			},
-			want:       true,
-			wantHeader: "",
+			want: true,
+			wantHeader: `keyId="Test",algorithm="RSA-SHA256",headers="(request-target) content-type server",` +
+				`signature="VtEbFMQR4nD6VygasRJtJ02k10S7dbJ01D7vWFvib2zLN5eQDIzF9SgxR4kBTNWyP2Da5p9miDDPEk2QX/hm5HuzS` +
+				`FrfuTCbr8I7YRuaiQlEW9KpjmuopAlaRji6iuJ2Zd+psbS335bF7eyl17M8QPR6tc7vI3EVmodcgitJlvs="`,
 		},
 	}
 	for _, tt := range tests {
@@ -457,6 +462,53 @@ func TestSign(t *testing.T) {
 			gotHeader := tt.args.r.Header.Get(signatureHeader)
 			if gotHeader != tt.wantHeader {
 				t.Errorf(tt.name+"\ngot header  = %v,\nwant header = %v", gotHeader, tt.wantHeader)
+			}
+		})
+	}
+}
+
+func TestHSCrossCheck(t *testing.T) {
+	type args struct {
+		secretKeyID    string
+		r              *http.Request
+		defaultHeaders []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Sign & Verify OK",
+			args: args{
+				secretKeyID: "Test",
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					r.Header.Set("Content-Type", "application/json")
+					return r
+				})(),
+				defaultHeaders: []string{requestTarget, "content-type"},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hs := NewHTTPSignatures(testSecretsStorage)
+			if len(tt.args.defaultHeaders) > 0 {
+				hs.SetDefaultSignatureHeaders(tt.args.defaultHeaders)
+			}
+			err := hs.Sign(tt.args.secretKeyID, tt.args.r)
+			if err != nil {
+				t.Errorf(tt.name+"\nSign error = %v", err)
+			}
+			err = hs.Verify(tt.args.r)
+			got := err == nil
+			if got != tt.want {
+				t.Errorf(tt.name+"\nerror = %s\ngot   = %v,\nwant  = %v", err, got, tt.want)
 			}
 		})
 	}
@@ -741,8 +793,7 @@ func TestHSBuildSignatureHeader(t *testing.T) {
 				headers:   []string{"digest", "host"},
 				signature: "signature",
 			},
-			want: `keyId="key1",algorithm="alg",created=1591130723,expires=1591130723,headers="digest,host",` +
-				`signature="signature"`,
+			want: `keyId="key1",algorithm="alg",headers="digest host",signature="signature"`,
 		},
 	}
 	for _, tt := range tests {

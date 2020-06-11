@@ -88,10 +88,10 @@ var (
 )
 
 const (
-	testAlgName = "TEST"
-	testErrAlgName = "ERR"
+	testAlgName      = "TEST"
+	testErrAlgName   = "ERR"
 	testRsaDummyName = "RSA-DUMMY"
-	testRsaErrName = "RSA-ERR"
+	testRsaErrName   = "RSA-ERR"
 )
 
 type testAlg struct{}
