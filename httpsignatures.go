@@ -197,9 +197,7 @@ func (hs *HTTPSignatures) Sign(secretKeyID string, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if len(d) > 0 {
-		r.Header.Set(digestHeader, d)
-	}
+	r.Header.Set(digestHeader, d)
 
 	sigStr, err := hs.buildSignatureString(headers, r)
 	if err != nil {
@@ -265,10 +263,10 @@ func (hs *HTTPSignatures) buildSignatureString(sh Headers, r *http.Request) ([]b
 func (hs *HTTPSignatures) buildSignatureHeader(h Headers) string {
 	header := fmt.Sprintf(`%s="%s",`, paramKeyID, h.keyID)
 	header += fmt.Sprintf(`%s="%s",`, paramAlgorithm, h.algorithm)
-	if inArray(paramCreated, h.headers) {
+	if hs.inHeaders(fmt.Sprintf("(%s)", paramCreated), h.headers) {
 		header += fmt.Sprintf(`%s=%d,`, paramCreated, h.created.Unix())
 	}
-	if inArray(paramExpires, h.headers) && hs.defaultExpiresSec > 0 {
+	if hs.inHeaders(fmt.Sprintf("(%s)", paramExpires), h.headers) && hs.defaultExpiresSec > 0 {
 		header += fmt.Sprintf(`%s=%d,`, paramExpires, h.expires.Unix())
 	}
 	if len(h.headers) > 0 {
@@ -305,8 +303,8 @@ func (hs *HTTPSignatures) createDigest(sh []string, r *http.Request) (string, er
 	return "", nil
 }
 
-func inArray(a string, arr []string) bool {
-	for _, b := range arr {
+func (hs *HTTPSignatures) inHeaders(a string, h []string) bool {
+	for _, b := range h {
 		if b == a {
 			return true
 		}

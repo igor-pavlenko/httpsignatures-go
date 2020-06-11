@@ -76,10 +76,10 @@ func (d *Digest) Verify(r *http.Request) error {
 		return pErr
 	}
 
-	h, ok := d.alg[strings.ToUpper(d.parsedDigestHeader.algo)]
+	h, ok := d.alg[strings.ToUpper(d.parsedDigestHeader.alg)]
 	if !ok {
 		return &DigestError{
-			fmt.Sprintf("unsupported digest hash algorithm '%s'", d.parsedDigestHeader.algo),
+			fmt.Sprintf("unsupported digest hash algorithm '%s'", d.parsedDigestHeader.alg),
 			nil,
 		}
 	}

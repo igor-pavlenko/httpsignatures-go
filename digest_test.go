@@ -123,7 +123,7 @@ func TestCreateDigest(t *testing.T) {
 			wantErrMsg:  "",
 		},
 		{
-			name: "Unsupported digest algo",
+			name: "Unsupported digest alg",
 			args: args{
 				algo: "MD4",
 				r:    testGetDigestRequestFunc(testBodyExample, ""),

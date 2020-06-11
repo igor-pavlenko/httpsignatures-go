@@ -628,7 +628,7 @@ func TestParserParseDigestHeader(t *testing.T) {
 				header: `MD5=ZDk5NTk4ODgxNjM3MDc5MDQ2MTgzNDQwMzExMThiZWI=`,
 			},
 			want: DigestHeader{
-				algo:   "MD5",
+				alg:    "MD5",
 				digest: "ZDk5NTk4ODgxNjM3MDc5MDQ2MTgzNDQwMzExMThiZWI=",
 			},
 			wantErrType: testParserErrType,
@@ -640,7 +640,7 @@ func TestParserParseDigestHeader(t *testing.T) {
 				header: `SHA-1=ZDNiMDlhYmUzMGNmZTJlZGZmNGVlOWUwYTE0MWM5M2JmNWIzYWY4Nw==`,
 			},
 			want: DigestHeader{
-				algo:   "SHA-1",
+				alg:    "SHA-1",
 				digest: "ZDNiMDlhYmUzMGNmZTJlZGZmNGVlOWUwYTE0MWM5M2JmNWIzYWY4Nw==",
 			},
 			wantErrType: testParserErrType,
@@ -653,7 +653,7 @@ func TestParserParseDigestHeader(t *testing.T) {
 					`MQ==`,
 			},
 			want: DigestHeader{
-				algo:   "SHA-256",
+				alg:    "SHA-256",
 				digest: "NWY4ZjA0ZjZhM2E4OTJhYWFiYmRkYjZjZjI3Mzg5NDQ5Mzc3Mzk2MGQ0YTMyNWIxMDVmZWU0NmVlZjQzMDRmMQ==",
 			},
 			wantErrType: testParserErrType,

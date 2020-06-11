@@ -494,6 +494,20 @@ func TestHSCrossCheck(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "Sign & Verify with default headers OK",
+			args: args{
+				secretKeyID: "Test",
+				r: (func() *http.Request {
+					r, _ := http.NewRequest(
+						http.MethodPost,
+						testHostExampleFullPath,
+						strings.NewReader(testBodyExample))
+					return r
+				})(),
+			},
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -795,6 +809,19 @@ func TestHSBuildSignatureHeader(t *testing.T) {
 			},
 			want: `keyId="key1",algorithm="alg",headers="digest host",signature="signature"`,
 		},
+		{
+			name: "Signature string with created & expires OK",
+			arg: Headers{
+				keyID:     "key2",
+				algorithm: "alg",
+				created:   time.Unix(1591130723, 0),
+				expires:   time.Unix(1591130723, 0),
+				headers:   []string{"(created)", "(expires)"},
+				signature: "signature",
+			},
+			want: `keyId="key2",algorithm="alg",created=1591130723,expires=1591130723,headers="(created) (expires)",` +
+				`signature="signature"`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -813,5 +840,43 @@ func TestHSSetDefaultSignatureHeaders(t *testing.T) {
 	hs.SetDefaultSignatureHeaders(defaultHeaders)
 	if !reflect.DeepEqual(hs.defaultHeaders, defaultHeaders) {
 		t.Errorf("got headers  = %v,\nwant headers = %v", hs.defaultHeaders, defaultHeaders)
+	}
+}
+
+func TestHSInHeaders(t *testing.T) {
+	type args struct {
+		h       string
+		headers []string
+	}
+	tests := []struct {
+		name string
+		arg  args
+		want bool
+	}{
+		{
+			name: "Found",
+			arg: args{
+				h:       "key1",
+				headers: []string{"key2", "key1"},
+			},
+			want: true,
+		},
+		{
+			name: "Not found",
+			arg: args{
+				h:       "key1",
+				headers: []string{"key2", "key3"},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hs := NewHTTPSignatures(NewSecretsStorage(map[string]Secret{}))
+			got := hs.inHeaders(tt.arg.h, tt.arg.headers)
+			if got != tt.want {
+				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
+			}
+		})
 	}
 }

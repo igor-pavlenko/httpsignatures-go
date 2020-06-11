@@ -44,7 +44,7 @@ type Headers struct {
 
 // DigestHeader Digest header parsed into params (alg & digest)
 type DigestHeader struct {
-	algo   string
+	alg    string
 	digest string
 }
 
@@ -399,7 +399,7 @@ func (p *Parser) setDigest() *ParserError {
 		}
 	}
 
-	p.digestHeader.algo = strings.ToUpper(string(p.key))
+	p.digestHeader.alg = strings.ToUpper(string(p.key))
 	p.digestHeader.digest = string(p.value)
 
 	p.key = nil
