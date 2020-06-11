@@ -300,7 +300,7 @@ func TestSignatureHashAlgorithmCreate(t *testing.T) {
 				data: []byte(
 					"(request-target): post /foo?param=value&pet=dog\n" +
 						"host: " + testHostExample + "\n" +
-						"date: Sun, 05 Jan 2014 21:31:40 GMT",
+						"date: " + testDateExample,
 				),
 				secret: Secret{
 					KeyID:      "key1",
@@ -561,7 +561,7 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				data: []byte(
 					"(request-target): post /foo?param=value&pet=dog\n" +
 						"host: " + testHostExample + "\n" +
-						"date: Sun, 05 Jan 2014 21:31:40 GMT",
+						"date: " + testDateExample,
 				),
 				secret: Secret{
 					KeyID:      "key2",

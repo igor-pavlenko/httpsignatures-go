@@ -12,9 +12,11 @@ import (
 
 const testBodyExample = `{"hello": "world"}`
 const testFullHostExample = "https://example.com"
-const testHostExampleShortPath = "https://example.com/foo"
+const testHostExamplePath = "https://example.com/foo"
 const testHostExampleFullPath = "https://example.com/foo?param=value&pet=dog"
 const testHostExample = "example.com"
+const testDateExample = "Sun, 05 Jan 2014 21:31:40 GMT"
+const testContentTypeJson = "application/json"
 
 const testRsaPrivateKey1024 = `-----BEGIN RSA PRIVATE KEY-----
 MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
@@ -157,6 +159,23 @@ func (a TestRsaErr) Create(secret Secret, data []byte) ([]byte, error) {
 func (a TestRsaErr) Verify(secret Secret, data []byte, signature []byte) error {
 	return errors.New("verify error")
 }
+
+var testSecretsStorage = NewSecretsStorage(map[string]Secret{
+	"Test": {
+		KeyID:      "Test",
+		PrivateKey: testRsaPrivateKey1024,
+		PublicKey:  testRsaPublicKey1024,
+		Algorithm:  "RSA-SHA256",
+	},
+	"NotSupported": {
+		KeyID:     "NotSupported",
+		Algorithm: testRsaDummyName,
+	},
+	"Err": {
+		KeyID:     "Err",
+		Algorithm: testRsaErrName,
+	},
+})
 
 func assert(t *testing.T, got interface{}, err error, eType string, name string, want interface{}, wantErrMsg string) {
 	if err != nil && reflect.TypeOf(err).String() != eType {
