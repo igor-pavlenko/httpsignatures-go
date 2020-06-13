@@ -290,7 +290,7 @@ func TestSign(t *testing.T) {
 			name: "Secret key not found",
 			args: args{
 				secretKeyID: "NotFound",
-				r: testGetRequest(),
+				r:           testGetRequest(),
 			},
 			want:        false,
 			wantErrType: testHSErrType,
@@ -300,7 +300,7 @@ func TestSign(t *testing.T) {
 			name: "Not supported algorithm for secret key",
 			args: args{
 				secretKeyID: "NotSupported",
-				r: testGetRequest(),
+				r:           testGetRequest(),
 			},
 			want:        false,
 			wantErrType: testHSErrType,
@@ -309,8 +309,8 @@ func TestSign(t *testing.T) {
 		{
 			name: "Create digest error",
 			args: args{
-				secretKeyID: "Test",
-				r: testGetRequest(),
+				secretKeyID:    "Test",
+				r:              testGetRequest(),
 				defaultDigest:  testErrAlgName,
 				defaultHeaders: []string{"digest"},
 			},
@@ -321,8 +321,8 @@ func TestSign(t *testing.T) {
 		{
 			name: "Build signature string error",
 			args: args{
-				secretKeyID: "Test",
-				r: testGetRequest(),
+				secretKeyID:    "Test",
+				r:              testGetRequest(),
 				defaultHeaders: []string{"test"},
 			},
 			want:        false,
@@ -333,7 +333,7 @@ func TestSign(t *testing.T) {
 			name: "Create signature error",
 			args: args{
 				secretKeyID: "Err",
-				r: testGetRequest(),
+				r:           testGetRequest(),
 			},
 			want:        false,
 			wantErrType: testHSErrType,
@@ -407,7 +407,7 @@ func TestHSCrossCheck(t *testing.T) {
 			name: "Sign & Verify with default headers OK",
 			args: args{
 				secretKeyID: "Test",
-				r: testGetRequest(),
+				r:           testGetRequest(),
 			},
 			want: true,
 		},

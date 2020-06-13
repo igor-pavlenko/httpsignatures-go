@@ -1074,7 +1074,7 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 		{
 			name: "ECDSA-SHA256 wrong signature",
 			args: args{
-				alg:  EcdsaSha256{},
+				alg: EcdsaSha256{},
 				sig: "MIGIAkIAnTM1VJZyCS2Sd+2rlWpy/a7NIce2zHrTw69m1pgk6Z500eSXE4ng5inyV3yvAmjhepzDGsZ0Ip4incq6WtUoyr" +
 					"ICQgFaYvlJceahh4rTvYdyO8lZhA00EGrLN8pBgx0pMxf1kvjCnLou6R03jB30ZFsOvbL2PSkSUalLXYMh4tunkVMyBg==",
 				data: []byte("test"),

@@ -102,8 +102,8 @@ func TestVerifyDigest(t *testing.T) {
 
 func TestCreateDigest(t *testing.T) {
 	type args struct {
-		alg  string
-		r    *http.Request
+		alg string
+		r   *http.Request
 	}
 	tests := []struct {
 		name        string
@@ -115,8 +115,8 @@ func TestCreateDigest(t *testing.T) {
 		{
 			name: "Valid MD5 digest",
 			args: args{
-				alg:  "MD5",
-				r:    testGetDigestRequestFunc(testBodyExample, ""),
+				alg: "MD5",
+				r:   testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "MD5=Sd/dVLAcvNLSq16eXua5uQ==",
 			wantErrType: "",
@@ -125,8 +125,8 @@ func TestCreateDigest(t *testing.T) {
 		{
 			name: "Unsupported digest alg",
 			args: args{
-				alg:  "MD4",
-				r:    testGetDigestRequestFunc(testBodyExample, ""),
+				alg: "MD4",
+				r:   testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "",
 			wantErrType: testDigestErrType,
@@ -135,8 +135,8 @@ func TestCreateDigest(t *testing.T) {
 		{
 			name: "Create digest error",
 			args: args{
-				alg:  "ERR",
-				r:    testGetDigestRequestFunc(testBodyExample, ""),
+				alg: "ERR",
+				r:   testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "",
 			wantErrType: testDigestErrType,
