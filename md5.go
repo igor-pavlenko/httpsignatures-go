@@ -4,14 +4,14 @@ import (
 	"crypto/md5"
 )
 
-const algoMd5 = "MD5"
+const algMd5 = "MD5"
 
 // Md5 MD5 Algorithm
 type Md5 struct{}
 
 // Algorithm Return algorithm name
 func (a Md5) Algorithm() string {
-	return algoMd5
+	return algMd5
 }
 
 // Create Create hash

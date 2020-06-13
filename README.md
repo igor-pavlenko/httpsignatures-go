@@ -10,9 +10,7 @@ This module is created to provide a simple solution to sign HTTP messages accord
 https://tools.ietf.org/html/draft-ietf-httpbis-message-signatures-00
 
 ### @todo:
-* Tests
 * Crypto
-  * https://golang.org/pkg/crypto/ecdsa/
   * https://golang.org/pkg/crypto/ed25519/
 * Documentation
 * Gin plugin

@@ -2,14 +2,17 @@ package httpsignatures
 
 import (
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/subtle"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
 	"hash"
+	"math/big"
 )
 
 // SignatureHashAlgorithm interface to create/verify Signature using secret keys
@@ -33,6 +36,11 @@ type DigestHashAlgorithm interface {
 type CryptoError struct {
 	Message string
 	Err     error
+}
+
+// ECDSASignature ECDSA signature
+type ECDSASignature struct {
+	R, S *big.Int
 }
 
 // Error error message
@@ -118,15 +126,18 @@ func signatureRsaAlgorithmVerify(t string, newHash func() hash.Hash, hash crypto
 
 	h := newHash()
 	_, _ = h.Write(data)
-	if t == algoRsaSha256 || t == algoRsaSha512 {
+
+	switch t {
+	case algRsaSha256, algRsaSha512:
 		err = rsa.VerifyPKCS1v15(publicKey, hash, h.Sum(nil), signature)
-	} else if t == algoRsaSsaPssSha256 || t == algoRsaSsaPssSha512 {
+	case algRsaSsaPssSha256, algRsaSsaPssSha512:
 		var opts rsa.PSSOptions
 		opts.SaltLength = rsa.PSSSaltLengthEqualsHash
 		err = rsa.VerifyPSS(publicKey, hash, h.Sum(nil), signature, &opts)
-	} else {
+	default:
 		return &CryptoError{fmt.Sprintf("unsupported verify algorithm type %s", t), err}
 	}
+
 	if err != nil {
 		return &CryptoError{"error verify signature", err}
 	}
@@ -154,12 +165,102 @@ func signatureRsaAlgorithmCreate(t string, newHash func() hash.Hash, hash crypto
 
 	h := newHash()
 	_, _ = h.Write(data)
-	if t == algoRsaSha256 || t == algoRsaSha512 {
+
+	switch t {
+	case algRsaSha256, algRsaSha512:
 		return rsa.SignPKCS1v15(rand.Reader, privateKey, hash, h.Sum(nil))
-	} else if t == algoRsaSsaPssSha256 || t == algoRsaSsaPssSha512 {
+	case algRsaSsaPssSha256, algRsaSsaPssSha512:
 		var opts rsa.PSSOptions
 		opts.SaltLength = rsa.PSSSaltLengthEqualsHash
 		return rsa.SignPSS(rand.Reader, privateKey, hash, h.Sum(nil), &opts)
+	default:
+		return nil, &CryptoError{fmt.Sprintf("unsupported algorithm type %s", t), err}
 	}
-	return nil, &CryptoError{fmt.Sprintf("unsupported algorithm type %s", t), err}
+}
+
+func signatureEcdsaAlgorithmVerify(t string, newHash func() hash.Hash, secret Secret, data []byte,
+	signature []byte) error {
+	block, _ := pem.Decode([]byte(secret.PublicKey))
+	if block == nil {
+		return &CryptoError{"no public key found", nil}
+	}
+
+	var pub interface{}
+	var err error
+	switch block.Type {
+	case "PUBLIC KEY":
+		pub, err = x509.ParsePKIXPublicKey(block.Bytes)
+		if err != nil {
+			return &CryptoError{"error ParsePKIXPublicKey", err}
+		}
+	default:
+		return &CryptoError{fmt.Sprintf("unsupported key type %s", block.Type), err}
+	}
+
+	var publicKey *ecdsa.PublicKey
+	switch pub := pub.(type) {
+	case *ecdsa.PublicKey:
+		publicKey = pub
+	default:
+		return &CryptoError{"unknown type of public key", nil}
+	}
+
+	sig := &ECDSASignature{}
+	_, err = asn1.Unmarshal(signature, sig)
+	if err != nil {
+		return &CryptoError{"error Unmarshal signature", err}
+	}
+
+	h := newHash()
+	_, _ = h.Write(data)
+
+	switch t {
+	case algEcdsaSha256:
+		res := ecdsa.Verify(publicKey, h.Sum(nil), sig.R, sig.S)
+		if !res {
+			return &CryptoError{"signature verification error", nil}
+		}
+	default:
+		return &CryptoError{fmt.Sprintf("unsupported verify algorithm type %s", t), err}
+	}
+
+	return nil
+}
+
+func signatureEcdsaAlgorithmCreate(t string, newHash func() hash.Hash, secret Secret,
+	data []byte) ([]byte, error) {
+	block, _ := pem.Decode([]byte(secret.PrivateKey))
+	if block == nil {
+		return nil, &CryptoError{"no private key found", nil}
+	}
+
+	var privateKey *ecdsa.PrivateKey
+	var err error
+	switch block.Type {
+	case "EC PRIVATE KEY":
+		privateKey, err = x509.ParseECPrivateKey(block.Bytes)
+		if err != nil {
+			return nil, &CryptoError{"error ParseECPrivateKey", err}
+		}
+	default:
+		return nil, &CryptoError{fmt.Sprintf("unsupported key type %s", block.Type), err}
+	}
+
+	h := newHash()
+	_, _ = h.Write(data)
+
+	switch t {
+	case algEcdsaSha256:
+		r, s, err := ecdsa.Sign(rand.Reader, privateKey, h.Sum(nil))
+		if err != nil {
+			return nil, err
+		}
+		sig, _ := asn1.Marshal(ECDSASignature{
+			R: r,
+			S: s,
+		})
+		return sig, nil
+	default:
+		return nil, &CryptoError{fmt.Sprintf("unsupported algorithm type %s", t), err}
+	}
 }

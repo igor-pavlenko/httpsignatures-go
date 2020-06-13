@@ -63,6 +63,14 @@ ujWUiQswHwpF91tUjm6zsZleLt+EjJyJTKVjN9mqJES6U4KcMYs0p0rulmTYnYUD
 UV6qwSI7mh5Q0ndPGiRg4ZgUkVI/JiiPuzXJ7MxF4OijXCzFHw==
 -----END RSA PRIVATE KEY-----`
 
+const testECDSAPrivateKey = `-----BEGIN EC PRIVATE KEY-----
+MIHcAgEBBEIAitPY7vFYgUY71qlXk8ujTpJqzYz8dkYP/hXxMT6JBsZiqf4vhuZI
+VDgkIwCgsUQ5U+x1+25gsY/pOOEJKDBKQ7OgBwYFK4EEACOhgYkDgYYABAFKT4ww
+5WDrV2vaOIb5m8OK09wkOqQ8DHlvgKjLznCwM0F54n6nGXyErSeMNWeoag9Is7B9
+6QMkXPyfZv4ZUL8MKgFYR9QrgDPXQswDxDQ4OWn06eBw0Tp+3CggnkcbkDhrgEK/
+BMxUHKgNNKMfDoisg1AaIKGYjiBQzUju58j0P1LoHQ==
+-----END EC PRIVATE KEY-----`
+
 const testRsaPublicKey1024 = `-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDCFENGw33yGihy92pDjZQhl0C3
 6rPJj+CvfSC8+q28hxA161QFNUd13wuCTUcq0Qd2qsBe/2hFyc2DCJJg0h1L78+6
@@ -80,6 +88,13 @@ kBqs/nXt7vHlOp4mHv9fzB8xUN/hHin8mnsFz8RWgfIv+hxKwpEht6A4++miB94H
 AgMBAAE=
 -----END PUBLIC KEY-----`
 
+const testECDSAPublicKey = `-----BEGIN PUBLIC KEY-----
+MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBSk+MMOVg61dr2jiG+ZvDitPcJDqk
+PAx5b4Coy85wsDNBeeJ+pxl8hK0njDVnqGoPSLOwfekDJFz8n2b+GVC/DCoBWEfU
+K4Az10LMA8Q0ODlp9OngcNE6ftwoIJ5HG5A4a4BCvwTMVByoDTSjHw6IrINQGiCh
+mI4gUM1I7ufI9D9S6B0=
+-----END PUBLIC KEY-----`
+
 var (
 	testGetDigestRequestFunc = func(b string, h string) *http.Request {
 		r, _ := http.NewRequest(http.MethodPost, testFullHostExample, strings.NewReader(b))
@@ -91,10 +106,11 @@ var (
 )
 
 const (
-	testAlgName      = "TEST"
-	testErrAlgName   = "ERR"
-	testRsaDummyName = "RSA-DUMMY"
-	testRsaErrName   = "RSA-ERR"
+	testAlgName        = "TEST"
+	testErrAlgName     = "ERR"
+	testRsaDummyName   = "RSA-DUMMY"
+	testRsaErrName     = "RSA-ERR"
+	testEcdsaDummyName = "ECDSA-DUMMY"
 )
 
 type testAlg struct{}
@@ -143,7 +159,26 @@ func (a RsaDummy) Verify(secret Secret, data []byte, signature []byte) error {
 	return signatureRsaAlgorithmVerify(testRsaDummyName, sha256.New, crypto.SHA256, secret, data, signature)
 }
 
-// RsaDummy RSA-DUMMY Algorithm
+// EcdsaDummy ECDSA-DUMMY Algorithm
+type EcdsaDummy struct{}
+
+// Algorithm Return algorithm name
+func (a EcdsaDummy) Algorithm() string {
+	return testEcdsaDummyName
+}
+
+// Create Create dummy
+func (a EcdsaDummy) Create(secret Secret, data []byte) ([]byte, error) {
+	return signatureEcdsaAlgorithmCreate(testEcdsaDummyName, sha256.New, secret, data)
+}
+
+// Verify Verify dummy
+func (a EcdsaDummy) Verify(secret Secret, data []byte, signature []byte) error {
+	//return signatureEcdsaAlgorithmVerify(testRsaDummyName, sha256.New, crypto.SHA256, secret, data, signature)
+	return nil
+}
+
+// TestRsaErr algorithm with errors
 type TestRsaErr struct{}
 
 // Algorithm Return algorithm name

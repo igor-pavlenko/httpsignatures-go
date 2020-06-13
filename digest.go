@@ -36,11 +36,11 @@ type Digest struct {
 // NewDigest create new digest
 func NewDigest() *Digest {
 	d := new(Digest)
-	d.defaultAlg = algoSha512
+	d.defaultAlg = algSha512
 	d.alg = map[string]DigestHashAlgorithm{
-		algoMd5:    Md5{},
-		algoSha256: Sha256{},
-		algoSha512: Sha512{},
+		algMd5:    Md5{},
+		algSha256: Sha256{},
+		algSha512: Sha512{},
 	}
 	return d
 }

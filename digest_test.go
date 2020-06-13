@@ -102,7 +102,7 @@ func TestVerifyDigest(t *testing.T) {
 
 func TestCreateDigest(t *testing.T) {
 	type args struct {
-		algo string
+		alg  string
 		r    *http.Request
 	}
 	tests := []struct {
@@ -115,7 +115,7 @@ func TestCreateDigest(t *testing.T) {
 		{
 			name: "Valid MD5 digest",
 			args: args{
-				algo: "MD5",
+				alg:  "MD5",
 				r:    testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "MD5=Sd/dVLAcvNLSq16eXua5uQ==",
@@ -125,7 +125,7 @@ func TestCreateDigest(t *testing.T) {
 		{
 			name: "Unsupported digest alg",
 			args: args{
-				algo: "MD4",
+				alg:  "MD4",
 				r:    testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "",
@@ -135,7 +135,7 @@ func TestCreateDigest(t *testing.T) {
 		{
 			name: "Create digest error",
 			args: args{
-				algo: "ERR",
+				alg:  "ERR",
 				r:    testGetDigestRequestFunc(testBodyExample, ""),
 			},
 			want:        "",
@@ -147,7 +147,7 @@ func TestCreateDigest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := NewDigest()
 			d.SetDigestHashAlgorithm(testErrAlg{})
-			got, err := d.Create(tt.args.algo, tt.args.r)
+			got, err := d.Create(tt.args.alg, tt.args.r)
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
@@ -182,7 +182,7 @@ func TestDigestSetDigestDefaultHashAlgorithm(t *testing.T) {
 	}{
 		{
 			name: "Set new default algorithm OK",
-			arg:  algoSha256,
+			arg:  algSha256,
 			want: true,
 		},
 		{

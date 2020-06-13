@@ -4,14 +4,14 @@ import (
 	"crypto/sha256"
 )
 
-const algoSha256 = "SHA-256"
+const algSha256 = "SHA-256"
 
 // Sha256 Sha256 Algorithm
 type Sha256 struct{}
 
 // Algorithm Return algorithm name
 func (a Sha256) Algorithm() string {
-	return algoSha256
+	return algSha256
 }
 
 // Create Create hash

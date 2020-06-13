@@ -3,6 +3,7 @@ package httpsignatures
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"testing"
 )
 
@@ -220,6 +221,11 @@ func TestHmacAlgorithm(t *testing.T) {
 			arg:  RsaSsaPssSha512{},
 			want: "RSASSA-PSS-SHA512",
 		},
+		{
+			name: "ECDSA-SHA256 OK",
+			arg:  EcdsaSha256{},
+			want: "ECDSA-SHA256",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -230,7 +236,7 @@ func TestHmacAlgorithm(t *testing.T) {
 	}
 }
 
-func TestSignatureHashAlgorithmCreate(t *testing.T) {
+func TestSignatureHashHmacAlgorithmCreate(t *testing.T) {
 	type args struct {
 		alg    SignatureHashAlgorithm
 		data   []byte
@@ -250,7 +256,7 @@ func TestSignatureHashAlgorithmCreate(t *testing.T) {
 				data: []byte("(request-target): post /foo?param=value&pet=dog"),
 				secret: Secret{
 					PrivateKey: "secret",
-					Algorithm:  algoHmacSha256,
+					Algorithm:  algHmacSha256,
 				},
 			},
 			want:        "7lksEgztUSEk34sJ8vGQpE0i+UK+ZexCQ0L8HpHBBJY=",
@@ -275,7 +281,7 @@ func TestSignatureHashAlgorithmCreate(t *testing.T) {
 				data: []byte("(request-target): post /foo?param=value&pet=dog"),
 				secret: Secret{
 					PrivateKey: "secret",
-					Algorithm:  algoHmacSha512,
+					Algorithm:  algHmacSha512,
 				},
 			},
 			want:        "xhrfZlhd8heV7O4w1nPbNRYdWSc2Qg8RuruZ5jDDHbVzSgd4NQOePJWN5xIKz74U/HhlLe138G8VLcH5atTZTg==",
@@ -293,6 +299,30 @@ func TestSignatureHashAlgorithmCreate(t *testing.T) {
 			wantErrType: testCryptoErrType,
 			wantErrMsg:  "CryptoError: no private key found",
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.args.alg.Create(tt.args.secret, tt.args.data)
+			sig := base64.StdEncoding.EncodeToString(got)
+			assert(t, sig, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestSignatureHashRsaAlgorithmCreate(t *testing.T) {
+	type args struct {
+		alg    SignatureHashAlgorithm
+		data   []byte
+		secret Secret
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        string
+		wantErrType string
+		wantErrMsg  string
+	}{
 		{
 			name: "RSA-SHA256 create ok",
 			args: args{
@@ -306,7 +336,7 @@ func TestSignatureHashAlgorithmCreate(t *testing.T) {
 					KeyID:      "key1",
 					PrivateKey: testRsaPrivateKey1024,
 					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSha256,
+					Algorithm:  algRsaSha256,
 				},
 			},
 			want: "qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdK" +
@@ -361,57 +391,17 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				data: []byte(
 					"(request-target): post /foo\n" +
 						"host: " + testHostExample + "\n" +
-						"date: Sun, 28 Apr 2020 00:47:00 GMT",
+						"date: " + testDateExample,
 				),
 				secret: Secret{
 					KeyID:      "key1",
 					PrivateKey: testRsaPrivateKey1024,
 					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSha512,
+					Algorithm:  algRsaSha512,
 				},
 			},
-			want: "j2EgWL0QOEmWjsKXRu1MxfYe2CzjdyNkkqbagIYpBNqBg2kevrQSSIocgfESHHoIgayK+we2SRAB59wVEM3gtQuQ9ef1BikcX5" +
-				"4GuqCThSA63kcuGXZzUgQcGnFpy2KO6gV2gl2cCkB8X6ZRY5oFfpiPvFxVY1bg/Y3DXlsKZb0=",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "",
-		},
-		{
-			name: "RSASSA-PSS-SHA256 create ok",
-			args: args{
-				alg: RsaSsaPssSha256{},
-				data: []byte(
-					"(request-target): post /foo\n" +
-						"host: " + testHostExample + "\n" +
-						"date: Sun, 28 Apr 2020 00:50:00 GMT",
-				),
-				secret: Secret{
-					KeyID:      "key1",
-					PrivateKey: testRsaPrivateKey1024,
-					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSsaPssSha256,
-				},
-			},
-			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "",
-		},
-		{
-			name: "RSASSA-PSS-SHA512 create ok",
-			args: args{
-				alg: RsaSsaPssSha512{},
-				data: []byte(
-					"(request-target): post /foo\n" +
-						"host: " + testHostExample + "\n" +
-						"date: Sun, 28 Apr 2020 00:50:00 GMT",
-				),
-				secret: Secret{
-					KeyID:      "key2",
-					PrivateKey: testRsaPrivateKey2048,
-					PublicKey:  testRsaPublicKey2048,
-					Algorithm:  algoRsaSsaPssSha512,
-				},
-			},
-			want:        "",
+			want: "iz8UWbpy9oK5R2sdD5fIj8VphjkGTeMZ2YKGOiW77yBYS8TB5R/T3Knet4DlnvjAqZrWBDbN75d8/Ttf/bIMoZO0NFr60SBngB" +
+				"zya6xnVIQ+0zoidBXpNjlttV2BDc44mrLvemk8Ar5NIiySNvKvKl7UNJxgKfT5UtGKDdry8qU=",
 			wantErrType: testCryptoErrType,
 			wantErrMsg:  "",
 		},
@@ -437,24 +427,198 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.args.alg.Create(tt.args.secret, tt.args.data)
 			sig := base64.StdEncoding.EncodeToString(got)
-			// RSASSA-PSS Algorithm generate always different signature
-			if tt.args.alg.Algorithm() == algoRsaSsaPssSha256 {
-				if len(sig) != 172 {
-					t.Errorf(tt.name+"\ngot = %v, expected length = 172 symbols", sig)
-				}
-				tt.want = sig
-			} else if tt.args.alg.Algorithm() == algoRsaSsaPssSha512 {
-				if len(sig) != 344 {
-					t.Errorf(tt.name+"\ngot = %v, expected length = 344 symbols", sig)
-				}
-				tt.want = sig
-			}
 			assert(t, sig, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
 
-func TestHmacAlgorithmVerify(t *testing.T) {
+func TestSignatureHashRsaSsaPssAlgorithmCreate(t *testing.T) {
+	type args struct {
+		alg    SignatureHashAlgorithm
+		data   []byte
+		secret Secret
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        string
+		wantErrType string
+		wantErrMsg  string
+	}{
+		{
+			name: "RSASSA-PSS-SHA256 create ok",
+			args: args{
+				alg: RsaSsaPssSha256{},
+				data: []byte(
+					"(request-target): post /foo\n" +
+						"host: " + testHostExample + "\n" +
+						"date: " + testDateExample,
+				),
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testRsaPrivateKey1024,
+					PublicKey:  testRsaPublicKey1024,
+					Algorithm:  algRsaSsaPssSha256,
+				},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "",
+		},
+		{
+			name: "RSASSA-PSS-SHA512 create ok",
+			args: args{
+				alg: RsaSsaPssSha512{},
+				data: []byte(
+					"(request-target): post /foo\n" +
+						"host: " + testHostExample + "\n" +
+						"date: " + testDateExample,
+				),
+				secret: Secret{
+					KeyID:      "key2",
+					PrivateKey: testRsaPrivateKey2048,
+					PublicKey:  testRsaPublicKey2048,
+					Algorithm:  algRsaSsaPssSha512,
+				},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.args.alg.Create(tt.args.secret, tt.args.data)
+			sig := base64.StdEncoding.EncodeToString(got)
+			// RSASSA-PSS Algorithm generate always different signature
+			var length = 0
+			switch tt.args.alg.Algorithm() {
+			case algRsaSsaPssSha256:
+				length = 172
+			case algRsaSsaPssSha512:
+				length = 344
+			}
+			if len(sig) < length {
+				t.Errorf(tt.name+"\ngot = %v, expected length = %d symbols, but got = %d", sig, length, len(sig))
+			}
+			tt.want = sig
+			assert(t, sig, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
+	type args struct {
+		alg    SignatureHashAlgorithm
+		data   []byte
+		secret Secret
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        string
+		wantErrType string
+		wantErrMsg  string
+	}{
+		{
+			name: "ECDSA-SHA256 create ok",
+			args: args{
+				alg: EcdsaSha256{},
+				data: []byte(
+					"(request-target): post /foo\n" +
+						"host: " + testHostExample + "\n" +
+						"date: " + testDateExample,
+				),
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testECDSAPrivateKey,
+					PublicKey:  testECDSAPublicKey,
+					Algorithm:  algEcdsaSha256,
+				},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "",
+		},
+		{
+			name: "ECDSA-SHA256 no private key found",
+			args: args{
+				alg:    EcdsaSha256{},
+				data:   []byte{},
+				secret: Secret{},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: no private key found",
+		},
+		{
+			name: "ECDSA-SHA256 unsupported key type",
+			args: args{
+				alg:  EcdsaSha256{},
+				data: []byte{},
+				secret: Secret{
+					PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
+-----END RSA PRIVATE KEY-----`,
+				},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: unsupported key type RSA PRIVATE KEY",
+		},
+		{
+			name: "ECDSA-SHA256 error ParseECPrivateKey",
+			args: args{
+				alg:  EcdsaSha256{},
+				data: []byte{},
+				secret: Secret{
+					PrivateKey: `-----BEGIN EC PRIVATE KEY-----
+MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
+-----END EC PRIVATE KEY-----`,
+				},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg: "CryptoError: error ParseECPrivateKey: x509: failed to parse EC private key: asn1: " +
+				"syntax error: data truncated",
+		},
+		{
+			name: "ECDSA-DUMMY unsupported algorithm type",
+			args: args{
+				alg:  EcdsaDummy{},
+				data: nil,
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testECDSAPrivateKey,
+					PublicKey:  testECDSAPublicKey,
+					Algorithm:  testEcdsaDummyName,
+				},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: unsupported algorithm type ECDSA-DUMMY",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.args.alg.Create(tt.args.secret, tt.args.data)
+			sig := base64.StdEncoding.EncodeToString(got)
+			// Ecdsa Algorithm generate always different signature
+			var length = 150
+			if err == nil {
+				if len(sig) < length {
+					t.Errorf(tt.name+"\ngot = %v, expected length = %d symbols, but got = %d", sig, length, len(sig))
+				}
+				tt.want = sig
+			}
+			fmt.Println(sig)
+			assert(t, sig, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 	type args struct {
 		alg    SignatureHashAlgorithm
 		sig    string
@@ -476,7 +640,7 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				data: []byte("(request-target): post /foo?param=value&pet=dog"),
 				secret: Secret{
 					PrivateKey: "secret",
-					Algorithm:  algoHmacSha256,
+					Algorithm:  algHmacSha256,
 				},
 			},
 			want:        true,
@@ -491,7 +655,7 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				data: []byte("xx"),
 				secret: Secret{
 					PrivateKey: "secret",
-					Algorithm:  algoHmacSha256,
+					Algorithm:  algHmacSha256,
 				},
 			},
 			want:        false,
@@ -518,7 +682,7 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				data: []byte("(request-target): post /foo?param=value&pet=dog"),
 				secret: Secret{
 					PrivateKey: "secret",
-					Algorithm:  algoHmacSha512,
+					Algorithm:  algHmacSha512,
 				},
 			},
 			want:        true,
@@ -533,7 +697,7 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 				data: []byte("xx"),
 				secret: Secret{
 					PrivateKey: "secret",
-					Algorithm:  algoHmacSha512,
+					Algorithm:  algHmacSha512,
 				},
 			},
 			want:        false,
@@ -552,6 +716,32 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 			wantErrType: testCryptoErrType,
 			wantErrMsg:  "CryptoError: no private key found",
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sig, _ := base64.StdEncoding.DecodeString(tt.args.sig)
+			err := tt.args.alg.Verify(tt.args.secret, tt.args.data, sig)
+			got := err == nil
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
+	type args struct {
+		alg    SignatureHashAlgorithm
+		sig    string
+		data   []byte
+		secret Secret
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        bool
+		wantErrType string
+		wantErrMsg  string
+	}{
 		{
 			name: "RSA-SHA256 verify ok",
 			args: args{
@@ -567,7 +757,7 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 					KeyID:      "key2",
 					PrivateKey: testRsaPrivateKey1024,
 					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSha256,
+					Algorithm:  algRsaSha256,
 				},
 			},
 			want:        true,
@@ -584,7 +774,7 @@ func TestHmacAlgorithmVerify(t *testing.T) {
 					KeyID:      "key3",
 					PrivateKey: testRsaPrivateKey1024,
 					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSha256,
+					Algorithm:  algRsaSha256,
 				},
 			},
 			want:        false,
@@ -652,18 +842,18 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			name: "RSA-SHA512 verify ok",
 			args: args{
 				alg: RsaSha512{},
-				sig: "j2EgWL0QOEmWjsKXRu1MxfYe2CzjdyNkkqbagIYpBNqBg2kevrQSSIocgfESHHoIgayK+we2SRAB59wVEM3gtQuQ9ef1Bik" +
-					"cX54GuqCThSA63kcuGXZzUgQcGnFpy2KO6gV2gl2cCkB8X6ZRY5oFfpiPvFxVY1bg/Y3DXlsKZb0=",
+				sig: "iz8UWbpy9oK5R2sdD5fIj8VphjkGTeMZ2YKGOiW77yBYS8TB5R/T3Knet4DlnvjAqZrWBDbN75d8/Ttf/bIMoZO0NFr60SB" +
+					"ngBzya6xnVIQ+0zoidBXpNjlttV2BDc44mrLvemk8Ar5NIiySNvKvKl7UNJxgKfT5UtGKDdry8qU=",
 				data: []byte(
 					"(request-target): post /foo\n" +
 						"host: " + testHostExample + "\n" +
-						"date: Sun, 28 Apr 2020 00:47:00 GMT",
+						"date: " + testDateExample,
 				),
 				secret: Secret{
 					KeyID:      "key1",
 					PrivateKey: testRsaPrivateKey1024,
 					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSha512,
+					Algorithm:  algRsaSha512,
 				},
 			},
 			want:        true,
@@ -671,21 +861,64 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			wantErrMsg:  "",
 		},
 		{
+			name: "RSA-DUMMY unsupported algorithm type",
+			args: args{
+				alg:  RsaDummy{},
+				sig:  "",
+				data: nil,
+				secret: Secret{
+					KeyID:      "key2",
+					PrivateKey: testRsaPrivateKey1024,
+					PublicKey:  testRsaPublicKey1024,
+					Algorithm:  algRsaSsaPssSha256,
+				},
+			},
+			want:        false,
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: unsupported verify algorithm type RSA-DUMMY",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sig, _ := base64.StdEncoding.DecodeString(tt.args.sig)
+			err := tt.args.alg.Verify(tt.args.secret, tt.args.data, sig)
+			got := err == nil
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
+	type args struct {
+		alg    SignatureHashAlgorithm
+		sig    string
+		data   []byte
+		secret Secret
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        bool
+		wantErrType string
+		wantErrMsg  string
+	}{
+		{
 			name: "RSASSA-PSS-SHA256 verify ok",
 			args: args{
 				alg: RsaSsaPssSha256{},
-				sig: "ax+hvuK+r5YdCrjKqKJoVYIYA2XaKTus1jI6VxAXapWKLf0IUwF9c+rDRmoNzr7m4vueZ4WPujAyb5jxwSmCf9gQGE24+JG" +
-					"WSz1yIXdLWttFksDXe0jonmTNGotTJZpgK+hBNHlrB+r1aITPK/APhVpwKBXQPwseYhJTmjgIQmg=",
+				sig: "s87lgQ4Uw6+uIeXwREqNwWpYyCZmVUbMFrORiNg90RDFA9RuSHY0ACKNyk6oNKYd88ve0rsA+3ZYPXYl7n81kMC/LfWDOxm" +
+					"ZkIKemGG9mYnbU6ArcN6AIxE0POuY60WrgqXdAZeUzW0fIxP4eM/93B4y2vCjBxwNPZoe2YDAPDs=",
 				data: []byte(
 					"(request-target): post /foo\n" +
 						"host: " + testHostExample + "\n" +
-						"date: Sun, 28 Apr 2020 00:50:00 GMT",
+						"date: " + testDateExample,
 				),
 				secret: Secret{
 					KeyID:      "key1",
 					PrivateKey: testRsaPrivateKey1024,
 					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSsaPssSha256,
+					Algorithm:  algRsaSsaPssSha256,
 				},
 			},
 			want:        true,
@@ -702,7 +935,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 					KeyID:      "key2",
 					PrivateKey: testRsaPrivateKey1024,
 					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSsaPssSha256,
+					Algorithm:  algRsaSsaPssSha256,
 				},
 			},
 			want:        false,
@@ -770,20 +1003,68 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			name: "RSASSA-PSS-SHA512 verify ok",
 			args: args{
 				alg: RsaSsaPssSha512{},
-				sig: "PFYH4AcklIlNNcrBLWkHGejwDwnK3kLcdMDjjPwZG7MrT76qwqyrl6heeMC6/+B4QEqZf1UuRzGAWJ7mziqh5vanlMfr6E2" +
-					"1bhvhsRII2eoqTmvvEANKg4dhnVxYApk/IA9W9wK9t7/p3CctB8CqjMi3hPTj8aNcQcDJNY1DpTcoxuNJK32wHnp/kwuBurL" +
-					"nMJBRSc/Zta0lojvlF+eSVLv2dX9Y3tkPvKqUjJy3z4VNYKiynMurbk3oFzFPYCl9JYfqtANk5M70WW+5H165bcmvImTanE5" +
-					"0m+Hr6JPRIe1j/SbCGz65pQFsyHDw+Jqma2Kuige3TU9iHMUlzQSZDA==",
+				sig: "DKqEARe39kCtFwKrMi82soguuwhY1C0wl4VUAFk4EzK3m/OFLMHgnqdJHeIGkJQPRfYsX/Mx78SR9wlt/n1xPu3GR+h8PVR" +
+					"NHA9ktsRdcG1BhoX+yZiB7X2ccDzp7D9olf2saii3y38Mp9YajNwBT8lnzIyAEn8Mxyjo0bWGMMo0v1GkhdQVkyOnacB+Gsl" +
+					"ADp02tMgXFQi4UwqgXKqKI1tFQ1XUhSk8rJK40H1ieQlrprZIstN3YSZmwb6j/uxZVCBnCPCuRcARWMvWnT2DNZPJPVYEahn" +
+					"6X1fxcG2UN/ETk3bT9G1CzIQtw8fz2CigbqtywA5gERFL27RhWbMdJg==",
 				data: []byte(
 					"(request-target): post /foo\n" +
 						"host: " + testHostExample + "\n" +
-						"date: Sun, 28 Apr 2020 00:50:00 GMT",
+						"date: " + testDateExample,
 				),
 				secret: Secret{
 					KeyID:      "key1",
 					PrivateKey: testRsaPrivateKey2048,
 					PublicKey:  testRsaPublicKey2048,
-					Algorithm:  algoRsaSsaPssSha512,
+					Algorithm:  algRsaSsaPssSha512,
+				},
+			},
+			want:        true,
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sig, _ := base64.StdEncoding.DecodeString(tt.args.sig)
+			err := tt.args.alg.Verify(tt.args.secret, tt.args.data, sig)
+			got := err == nil
+			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
+	type args struct {
+		alg    SignatureHashAlgorithm
+		sig    string
+		data   []byte
+		secret Secret
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        bool
+		wantErrType string
+		wantErrMsg  string
+	}{
+		{
+			name: "ECDSA-SHA256 verify ok",
+			args: args{
+				alg: EcdsaSha256{},
+				sig: "MIGIAkIAnTM1VJZyCS2Sd+2rlWpy/a7NIce2zHrTw69m1pgk6Z500eSXE4ng5inyV3yvAmjhepzDGsZ0Ip4incq6WtUoyr" +
+					"ICQgFaYvlJceahh4rTvYdyO8lZhA00EGrLN8pBgx0pMxf1kvjCnLou6R03jB30ZFsOvbL2PSkSUalLXYMh4tunkVMyBg==",
+				data: []byte(
+					"(request-target): post /foo\n" +
+						"host: " + testHostExample + "\n" +
+						"date: " + testDateExample,
+				),
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testECDSAPrivateKey,
+					PublicKey:  testECDSAPublicKey,
+					Algorithm:  algEcdsaSha256,
 				},
 			},
 			want:        true,
@@ -791,21 +1072,63 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 			wantErrMsg:  "",
 		},
 		{
-			name: "RSA-DUMMY unsupported algorithm type",
+			name: "ECDSA-SHA256 wrong signature",
 			args: args{
-				alg:  RsaDummy{},
-				sig:  "",
-				data: nil,
+				alg:  EcdsaSha256{},
+				sig: "MIGIAkIAnTM1VJZyCS2Sd+2rlWpy/a7NIce2zHrTw69m1pgk6Z500eSXE4ng5inyV3yvAmjhepzDGsZ0Ip4incq6WtUoyr" +
+					"ICQgFaYvlJceahh4rTvYdyO8lZhA00EGrLN8pBgx0pMxf1kvjCnLou6R03jB30ZFsOvbL2PSkSUalLXYMh4tunkVMyBg==",
+				data: []byte("test"),
 				secret: Secret{
-					KeyID:      "key2",
-					PrivateKey: testRsaPrivateKey1024,
-					PublicKey:  testRsaPublicKey1024,
-					Algorithm:  algoRsaSsaPssSha256,
+					KeyID:      "key1",
+					PrivateKey: testECDSAPrivateKey,
+					PublicKey:  testECDSAPublicKey,
+					Algorithm:  algEcdsaSha256,
 				},
 			},
 			want:        false,
 			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported verify algorithm type RSA-DUMMY",
+			wantErrMsg:  "CryptoError: signature verification error",
+		},
+		{
+			name: "ECDSA-SHA256 no public key found",
+			args: args{
+				alg:    EcdsaSha256{},
+				sig:    "",
+				data:   []byte{},
+				secret: Secret{},
+			},
+			want:        false,
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: no public key found",
+		},
+		{
+			name: "ECDSA-SHA256 unsupported key type",
+			args: args{
+				alg:  EcdsaSha256{},
+				data: []byte{},
+				secret: Secret{
+					PublicKey: `-----BEGIN NO PUBLIC KEY-----
+-----END NO PUBLIC KEY-----`,
+				},
+			},
+			want:        false,
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: unsupported key type NO PUBLIC KEY",
+		},
+		{
+			name: "ECDSA-SHA256 error ParsePKIXPublicKey",
+			args: args{
+				alg:  EcdsaSha256{},
+				data: []byte{},
+				secret: Secret{
+					PublicKey: `-----BEGIN PUBLIC KEY-----
+MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
+-----END PUBLIC KEY-----`,
+				},
+			},
+			want:        false,
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
 		},
 	}
 

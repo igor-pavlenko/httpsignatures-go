@@ -4,14 +4,14 @@ import (
 	"crypto/sha512"
 )
 
-const algoSha512 = "SHA-512"
+const algSha512 = "SHA-512"
 
 // Sha512 Sha512 Algorithm
 type Sha512 struct{}
 
 // Algorithm Return algorithm name
 func (a Sha512) Algorithm() string {
-	return algoSha512
+	return algSha512
 }
 
 // Create Create hash

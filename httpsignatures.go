@@ -53,12 +53,13 @@ func NewHTTPSignatures(ss *SecretsStorage) *HTTPSignatures {
 	hs.ss = ss
 	hs.d = NewDigest()
 	hs.alg = map[string]SignatureHashAlgorithm{
-		algoRsaSsaPssSha256: RsaSsaPssSha256{},
-		algoRsaSsaPssSha512: RsaSsaPssSha512{},
-		algoRsaSha256:       RsaSha256{},
-		algoRsaSha512:       RsaSha512{},
-		algoHmacSha256:      HmacSha256{},
-		algoHmacSha512:      HmacSha512{},
+		algRsaSsaPssSha256: RsaSsaPssSha256{},
+		algRsaSsaPssSha512: RsaSsaPssSha512{},
+		algEcdsaSha256:     EcdsaSha256{},
+		algRsaSha256:       RsaSha256{},
+		algRsaSha512:       RsaSha512{},
+		algHmacSha256:      HmacSha256{},
+		algHmacSha512:      HmacSha512{},
 	}
 	hs.defaultExpiresSec = defaultExpiresSec
 	hs.defaultHeaders = []string{"(created)"}

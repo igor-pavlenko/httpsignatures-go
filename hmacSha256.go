@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 )
 
-const algoHmacSha256 = "HMAC-SHA256"
+const algHmacSha256 = "HMAC-SHA256"
 
 // HmacSha256 HMAC-SHA256 Algorithm
 //
@@ -13,7 +13,7 @@ type HmacSha256 struct{}
 
 // Algorithm Return algorithm name
 func (a HmacSha256) Algorithm() string {
-	return algoHmacSha256
+	return algHmacSha256
 }
 
 // Create Create signature using passed privateKey from secret

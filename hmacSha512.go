@@ -4,14 +4,14 @@ import (
 	"crypto/sha512"
 )
 
-const algoHmacSha512 = "HMAC-SHA512"
+const algHmacSha512 = "HMAC-SHA512"
 
 // HmacSha512 HMAC-SHA512 Algorithm
 type HmacSha512 struct{}
 
 // Algorithm Return algorithm name
 func (a HmacSha512) Algorithm() string {
-	return algoHmacSha512
+	return algHmacSha512
 }
 
 // Create Create signature using passed privateKey from secret
