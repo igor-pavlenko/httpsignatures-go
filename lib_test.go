@@ -174,8 +174,7 @@ func (a EcdsaDummy) Create(secret Secret, data []byte) ([]byte, error) {
 
 // Verify Verify dummy
 func (a EcdsaDummy) Verify(secret Secret, data []byte, signature []byte) error {
-	//return signatureEcdsaAlgorithmVerify(testRsaDummyName, sha256.New, crypto.SHA256, secret, data, signature)
-	return nil
+	return signatureEcdsaAlgorithmVerify(testEcdsaDummyName, sha256.New, secret, data, signature)
 }
 
 // TestRsaErr algorithm with errors

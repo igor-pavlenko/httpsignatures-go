@@ -3,7 +3,6 @@ package httpsignatures
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 	"testing"
 )
 
@@ -367,7 +366,7 @@ func TestSignatureHashRsaAlgorithmCreate(t *testing.T) {
 			},
 			want:        "",
 			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported key type SSH PRIVATE KEY",
+			wantErrMsg:  "CryptoError: unsupported private key type SSH PRIVATE KEY",
 		},
 		{
 			name: "RSA-SHA256 error ParsePKCS1PrivateKey",
@@ -382,7 +381,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			},
 			want:        "",
 			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error ParsePKCS1PrivateKey: asn1: syntax error: data truncated",
+			wantErrMsg:  "CryptoError: unsupported private key type RSA PRIVATE KEY",
 		},
 		{
 			name: "RSA-SHA512 create ok",
@@ -420,6 +419,27 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			want:        "",
 			wantErrType: testCryptoErrType,
 			wantErrMsg:  "CryptoError: unsupported algorithm type RSA-DUMMY",
+		},
+		{
+			name: "RSA-SHA256 create ok",
+			args: args{
+				alg: RsaSha256{},
+				data: []byte(
+					"(request-target): post /foo?param=value&pet=dog\n" +
+						"host: " + testHostExample + "\n" +
+						"date: " + testDateExample,
+				),
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testRsaPrivateKey1024,
+					PublicKey:  testRsaPublicKey1024,
+					Algorithm:  algRsaSha256,
+				},
+			},
+			want: "qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdK" +
+				"FYRqzic+efkb3nndiv/x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0=",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "",
 		},
 	}
 
@@ -564,7 +584,7 @@ func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
 			},
 			want:        "",
 			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported key type RSA PRIVATE KEY",
+			wantErrMsg:  "CryptoError: unsupported private key type RSA PRIVATE KEY",
 		},
 		{
 			name: "ECDSA-SHA256 error ParseECPrivateKey",
@@ -579,8 +599,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			},
 			want:        "",
 			wantErrType: testCryptoErrType,
-			wantErrMsg: "CryptoError: error ParseECPrivateKey: x509: failed to parse EC private key: asn1: " +
-				"syntax error: data truncated",
+			wantErrMsg:  "CryptoError: unsupported private key type EC PRIVATE KEY",
 		},
 		{
 			name: "ECDSA-DUMMY unsupported algorithm type",
@@ -598,6 +617,22 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			wantErrType: testCryptoErrType,
 			wantErrMsg:  "CryptoError: unsupported algorithm type ECDSA-DUMMY",
 		},
+		{
+			name: "ECDSA-SHA256 unknown private key type",
+			args: args{
+				alg:  EcdsaSha256{},
+				data: []byte{},
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testRsaPrivateKey1024,
+					PublicKey:  testRsaPublicKey1024,
+					Algorithm:  algEcdsaSha256,
+				},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: unknown private key type",
+		},
 	}
 
 	for _, tt := range tests {
@@ -612,7 +647,6 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				}
 				tt.want = sig
 			}
-			fmt.Println(sig)
 			assert(t, sig, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
@@ -805,7 +839,7 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 			},
 			want:        false,
 			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported key type NO PUBLIC KEY",
+			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
 		},
 		{
 			name: "RSA-SHA256 error ParsePKIXPublicKey",
@@ -966,7 +1000,7 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 			},
 			want:        false,
 			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported key type NO PUBLIC KEY",
+			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
 		},
 		{
 			name: "RSASSA-PSS-SHA256 error ParsePKIXPublicKey",
@@ -1042,6 +1076,10 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 		data   []byte
 		secret Secret
 	}
+
+	const correctSignature = "MIGIAkIAnTM1VJZyCS2Sd+2rlWpy/a7NIce2zHrTw69m1pgk6Z500eSXE4ng5inyV3yvAmjhepzDGsZ0Ip4incq" +
+		"6WtUoyrICQgFaYvlJceahh4rTvYdyO8lZhA00EGrLN8pBgx0pMxf1kvjCnLou6R03jB30ZFsOvbL2PSkSUalLXYMh4tunkVMyBg=="
+
 	tests := []struct {
 		name        string
 		args        args
@@ -1053,8 +1091,7 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 			name: "ECDSA-SHA256 verify ok",
 			args: args{
 				alg: EcdsaSha256{},
-				sig: "MIGIAkIAnTM1VJZyCS2Sd+2rlWpy/a7NIce2zHrTw69m1pgk6Z500eSXE4ng5inyV3yvAmjhepzDGsZ0Ip4incq6WtUoyr" +
-					"ICQgFaYvlJceahh4rTvYdyO8lZhA00EGrLN8pBgx0pMxf1kvjCnLou6R03jB30ZFsOvbL2PSkSUalLXYMh4tunkVMyBg==",
+				sig: correctSignature,
 				data: []byte(
 					"(request-target): post /foo\n" +
 						"host: " + testHostExample + "\n" +
@@ -1113,7 +1150,7 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 			},
 			want:        false,
 			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported key type NO PUBLIC KEY",
+			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
 		},
 		{
 			name: "ECDSA-SHA256 error ParsePKIXPublicKey",
@@ -1129,6 +1166,59 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			want:        false,
 			wantErrType: testCryptoErrType,
 			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
+		},
+		{
+			name: "ECDSA-SHA256 error wrong public key",
+			args: args{
+				alg:  EcdsaSha256{},
+				data: []byte{},
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testRsaPrivateKey1024,
+					PublicKey:  testRsaPublicKey1024,
+					Algorithm:  algEcdsaSha256,
+				},
+			},
+			want:        false,
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: unknown type of public key",
+		},
+		{
+			name: "ECDSA-SHA256 error Unmarshal signature",
+			args: args{
+				alg:  EcdsaSha256{},
+				sig:  "MTIz",
+				data: []byte{},
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testECDSAPrivateKey,
+					PublicKey:  testECDSAPublicKey,
+					Algorithm:  algEcdsaSha256,
+				},
+			},
+			want:        false,
+			wantErrType: testCryptoErrType,
+			wantErrMsg: "CryptoError: error Unmarshal signature: asn1: structure error: tags don't match (16 vs " +
+				"{class:0 tag:17 length:50 isCompound:true}) {optional:false explicit:false application:false " +
+				"private:false defaultValue:<nil> tag:<nil> stringType:0 timeType:0 set:false omitEmpty:false}" +
+				" ECDSASignature @2",
+		},
+		{
+			name: "ECDSA-DUMMY unsupported algorithm type",
+			args: args{
+				alg:  EcdsaDummy{},
+				sig:  correctSignature,
+				data: nil,
+				secret: Secret{
+					KeyID:      "key2",
+					PrivateKey: testECDSAPrivateKey,
+					PublicKey:  testECDSAPublicKey,
+					Algorithm:  algEcdsaSha256,
+				},
+			},
+			want:        false,
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "CryptoError: unsupported verify algorithm type ECDSA-DUMMY",
 		},
 	}
 
