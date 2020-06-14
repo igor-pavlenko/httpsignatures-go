@@ -153,16 +153,16 @@ func TestParserParseSingleFields(t *testing.T) {
 		{
 			name: "Signature: all params",
 			args: args{
-				header: `keyId="v1",algorithm="v2",created=1402170695,expires=1402170699,headers="v-3 v-4",signature=` +
-					`"v5"`,
+				header: `keyId="k1",algorithm="a1",created=1592157709,expires=1592157709,headers="h1 h2",signature=` +
+					`"s1"`,
 			},
 			want: Headers{
-				keyID:     "v1",
-				algorithm: "v2",
-				created:   time.Unix(1402170695, 0),
-				expires:   time.Unix(1402170699, 0),
-				headers:   []string{"v-3", "v-4"},
-				signature: "v5",
+				keyID:     "k1",
+				algorithm: "a1",
+				created:   time.Unix(1592157709, 0),
+				expires:   time.Unix(1592157709, 0),
+				headers:   []string{"h1", "h2"},
+				signature: "s1",
 			},
 			wantErrType: testParserErrType,
 			wantErrMsg:  "",
