@@ -9,6 +9,19 @@ import (
 const testCryptoErrType = "*httpsignatures.CryptoError"
 const testHashData = "hello world"
 
+type argsVerify struct {
+	alg    SignatureHashAlgorithm
+	sig    string
+	data   []byte
+	secret Secret
+}
+
+func verify(args argsVerify) (bool, error) {
+	sig, _ := base64.StdEncoding.DecodeString(args.sig)
+	err := args.alg.Verify(args.secret, args.data, sig)
+	return err == nil, err
+}
+
 func TestHashAlgorithm(t *testing.T) {
 	tests := []struct {
 		name string
@@ -653,22 +666,16 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 }
 
 func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
-	type args struct {
-		alg    SignatureHashAlgorithm
-		sig    string
-		data   []byte
-		secret Secret
-	}
 	tests := []struct {
 		name        string
-		args        args
+		args        argsVerify
 		want        bool
 		wantErrType string
 		wantErrMsg  string
 	}{
 		{
 			name: "HMAC-SHA256 verify ok",
-			args: args{
+			args: argsVerify{
 				alg:  HmacSha256{},
 				sig:  "7lksEgztUSEk34sJ8vGQpE0i+UK+ZexCQ0L8HpHBBJY=",
 				data: []byte("(request-target): post /foo?param=value&pet=dog"),
@@ -683,7 +690,7 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "HMAC-SHA256 wrong signature",
-			args: args{
+			args: argsVerify{
 				alg:  HmacSha256{},
 				sig:  "MTIz",
 				data: []byte("xx"),
@@ -698,7 +705,7 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "HMAC-SHA256 no private key found",
-			args: args{
+			args: argsVerify{
 				alg:    HmacSha256{},
 				sig:    "",
 				data:   []byte{},
@@ -710,7 +717,7 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "HMAC-SHA512 verify ok",
-			args: args{
+			args: argsVerify{
 				alg:  HmacSha512{},
 				sig:  "xhrfZlhd8heV7O4w1nPbNRYdWSc2Qg8RuruZ5jDDHbVzSgd4NQOePJWN5xIKz74U/HhlLe138G8VLcH5atTZTg==",
 				data: []byte("(request-target): post /foo?param=value&pet=dog"),
@@ -725,7 +732,7 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "HMAC-SHA512 wrong signature",
-			args: args{
+			args: argsVerify{
 				alg:  HmacSha512{},
 				sig:  "MTIz",
 				data: []byte("xx"),
@@ -740,7 +747,7 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "HMAC-SHA512 no private key found",
-			args: args{
+			args: argsVerify{
 				alg:    HmacSha512{},
 				sig:    "",
 				data:   []byte{},
@@ -754,31 +761,23 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sig, _ := base64.StdEncoding.DecodeString(tt.args.sig)
-			err := tt.args.alg.Verify(tt.args.secret, tt.args.data, sig)
-			got := err == nil
+			got, err := verify(tt.args)
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
 
 func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
-	type args struct {
-		alg    SignatureHashAlgorithm
-		sig    string
-		data   []byte
-		secret Secret
-	}
 	tests := []struct {
 		name        string
-		args        args
+		args        argsVerify
 		want        bool
 		wantErrType string
 		wantErrMsg  string
 	}{
 		{
 			name: "RSA-SHA256 verify ok",
-			args: args{
+			args: argsVerify{
 				alg: RsaSha256{},
 				sig: "qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8V" +
 					"fEdKFYRqzic+efkb3nndiv/x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0=",
@@ -800,7 +799,7 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "RSA-SHA256 wrong signature",
-			args: args{
+			args: argsVerify{
 				alg:  RsaSha256{},
 				sig:  "MTIz",
 				data: []byte("test"),
@@ -817,7 +816,7 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "RSA-SHA256 no public key found",
-			args: args{
+			args: argsVerify{
 				alg:    RsaSha256{},
 				sig:    "",
 				data:   []byte{},
@@ -829,7 +828,7 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "RSA-SHA256 unsupported key type",
-			args: args{
+			args: argsVerify{
 				alg:  RsaSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -843,7 +842,7 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "RSA-SHA256 error ParsePKIXPublicKey",
-			args: args{
+			args: argsVerify{
 				alg:  RsaSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -858,7 +857,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 		},
 		{
 			name: "RSA-SHA256 unknown type of public key",
-			args: args{
+			args: argsVerify{
 				alg:  RsaSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -874,7 +873,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 		},
 		{
 			name: "RSA-SHA512 verify ok",
-			args: args{
+			args: argsVerify{
 				alg: RsaSha512{},
 				sig: "iz8UWbpy9oK5R2sdD5fIj8VphjkGTeMZ2YKGOiW77yBYS8TB5R/T3Knet4DlnvjAqZrWBDbN75d8/Ttf/bIMoZO0NFr60SB" +
 					"ngBzya6xnVIQ+0zoidBXpNjlttV2BDc44mrLvemk8Ar5NIiySNvKvKl7UNJxgKfT5UtGKDdry8qU=",
@@ -896,7 +895,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 		},
 		{
 			name: "RSA-DUMMY unsupported algorithm type",
-			args: args{
+			args: argsVerify{
 				alg:  RsaDummy{},
 				sig:  "",
 				data: nil,
@@ -915,31 +914,23 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sig, _ := base64.StdEncoding.DecodeString(tt.args.sig)
-			err := tt.args.alg.Verify(tt.args.secret, tt.args.data, sig)
-			got := err == nil
+			got, err := verify(tt.args)
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
 
 func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
-	type args struct {
-		alg    SignatureHashAlgorithm
-		sig    string
-		data   []byte
-		secret Secret
-	}
 	tests := []struct {
 		name        string
-		args        args
+		args        argsVerify
 		want        bool
 		wantErrType string
 		wantErrMsg  string
 	}{
 		{
 			name: "RSASSA-PSS-SHA256 verify ok",
-			args: args{
+			args: argsVerify{
 				alg: RsaSsaPssSha256{},
 				sig: "s87lgQ4Uw6+uIeXwREqNwWpYyCZmVUbMFrORiNg90RDFA9RuSHY0ACKNyk6oNKYd88ve0rsA+3ZYPXYl7n81kMC/LfWDOxm" +
 					"ZkIKemGG9mYnbU6ArcN6AIxE0POuY60WrgqXdAZeUzW0fIxP4eM/93B4y2vCjBxwNPZoe2YDAPDs=",
@@ -961,7 +952,7 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "RSASSA-PSS-SHA256 wrong signature",
-			args: args{
+			args: argsVerify{
 				alg:  RsaSsaPssSha256{},
 				sig:  "MTIz",
 				data: []byte("test"),
@@ -978,7 +969,7 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "RSASSA-PSS-SHA256 no public key found",
-			args: args{
+			args: argsVerify{
 				alg:    RsaSsaPssSha256{},
 				sig:    "",
 				data:   []byte{},
@@ -990,7 +981,7 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "RSASSA-PSS-SHA256 unsupported key type",
-			args: args{
+			args: argsVerify{
 				alg:  RsaSsaPssSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -1004,7 +995,7 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "RSASSA-PSS-SHA256 error ParsePKIXPublicKey",
-			args: args{
+			args: argsVerify{
 				alg:  RsaSsaPssSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -1019,7 +1010,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 		},
 		{
 			name: "RSASSA-PSS-SHA256 unknown type of public key",
-			args: args{
+			args: argsVerify{
 				alg:  RsaSsaPssSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -1035,7 +1026,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 		},
 		{
 			name: "RSASSA-PSS-SHA512 verify ok",
-			args: args{
+			args: argsVerify{
 				alg: RsaSsaPssSha512{},
 				sig: "DKqEARe39kCtFwKrMi82soguuwhY1C0wl4VUAFk4EzK3m/OFLMHgnqdJHeIGkJQPRfYsX/Mx78SR9wlt/n1xPu3GR+h8PVR" +
 					"NHA9ktsRdcG1BhoX+yZiB7X2ccDzp7D9olf2saii3y38Mp9YajNwBT8lnzIyAEn8Mxyjo0bWGMMo0v1GkhdQVkyOnacB+Gsl" +
@@ -1061,35 +1052,27 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sig, _ := base64.StdEncoding.DecodeString(tt.args.sig)
-			err := tt.args.alg.Verify(tt.args.secret, tt.args.data, sig)
-			got := err == nil
+			got, err := verify(tt.args)
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
 }
 
 func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
-	type args struct {
-		alg    SignatureHashAlgorithm
-		sig    string
-		data   []byte
-		secret Secret
-	}
 
 	const correctSignature = "MIGIAkIAnTM1VJZyCS2Sd+2rlWpy/a7NIce2zHrTw69m1pgk6Z500eSXE4ng5inyV3yvAmjhepzDGsZ0Ip4incq" +
 		"6WtUoyrICQgFaYvlJceahh4rTvYdyO8lZhA00EGrLN8pBgx0pMxf1kvjCnLou6R03jB30ZFsOvbL2PSkSUalLXYMh4tunkVMyBg=="
 
 	tests := []struct {
 		name        string
-		args        args
+		args        argsVerify
 		want        bool
 		wantErrType string
 		wantErrMsg  string
 	}{
 		{
 			name: "ECDSA-SHA256 verify ok",
-			args: args{
+			args: argsVerify{
 				alg: EcdsaSha256{},
 				sig: correctSignature,
 				data: []byte(
@@ -1110,7 +1093,7 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "ECDSA-SHA256 wrong signature",
-			args: args{
+			args: argsVerify{
 				alg: EcdsaSha256{},
 				sig: "MIGIAkIAnTM1VJZyCS2Sd+2rlWpy/a7NIce2zHrTw69m1pgk6Z500eSXE4ng5inyV3yvAmjhepzDGsZ0Ip4incq6WtUoyr" +
 					"ICQgFaYvlJceahh4rTvYdyO8lZhA00EGrLN8pBgx0pMxf1kvjCnLou6R03jB30ZFsOvbL2PSkSUalLXYMh4tunkVMyBg==",
@@ -1128,7 +1111,7 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "ECDSA-SHA256 no public key found",
-			args: args{
+			args: argsVerify{
 				alg:    EcdsaSha256{},
 				sig:    "",
 				data:   []byte{},
@@ -1140,7 +1123,7 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "ECDSA-SHA256 unsupported key type",
-			args: args{
+			args: argsVerify{
 				alg:  EcdsaSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -1154,7 +1137,7 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 		},
 		{
 			name: "ECDSA-SHA256 error ParsePKIXPublicKey",
-			args: args{
+			args: argsVerify{
 				alg:  EcdsaSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -1169,7 +1152,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 		},
 		{
 			name: "ECDSA-SHA256 error wrong public key",
-			args: args{
+			args: argsVerify{
 				alg:  EcdsaSha256{},
 				data: []byte{},
 				secret: Secret{
@@ -1185,7 +1168,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 		},
 		{
 			name: "ECDSA-SHA256 error Unmarshal signature",
-			args: args{
+			args: argsVerify{
 				alg:  EcdsaSha256{},
 				sig:  "MTIz",
 				data: []byte{},
@@ -1205,7 +1188,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 		},
 		{
 			name: "ECDSA-DUMMY unsupported algorithm type",
-			args: args{
+			args: argsVerify{
 				alg:  EcdsaDummy{},
 				sig:  correctSignature,
 				data: nil,
@@ -1224,9 +1207,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sig, _ := base64.StdEncoding.DecodeString(tt.args.sig)
-			err := tt.args.alg.Verify(tt.args.secret, tt.args.data, sig)
-			got := err == nil
+			got, err := verify(tt.args)
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})
 	}
