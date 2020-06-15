@@ -89,26 +89,52 @@ func TestVerify(t *testing.T) {
 			wantErrMsg:  "",
 		},
 		{
-			name: "Valid signature all headers test",
+			name: "Valid signature with expires in future",
 			args: args{
 				r: (func() *http.Request {
 					r := testGetRequest()
-					r.Header.Set("Signature", `keyId="Test",algorithm="rsa-sha256",created=1402170695,`+
-						`expires=1402170699,headers="(request-target) (created) (expires) host date content-type `+
-						`digest content-length",signature="nAkCW0wg9AbbStQRLi8fsS1mPPnA6S5+/0alANcoDFG9hG0bJ8NnMR`+
-						`cB1Sz1eccNMzzLEke7nGXqoiJYZFfT81oaRqh/MNFwQVX4OZvTLZ5xVZQuchRkOSO7b2QX0aFWFOUq6dnwAyliHr`+
-						`p6w3FOxwkGGJPaerw2lOYLdC/Bejk="`)
-					r.Header.Set("Host", testHostExample)
-					r.Header.Set("Date", testDateExample)
-					r.Header.Set("Digest", "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
-					r.Header.Set(testContentTypeHeader, testContentTypeJSON)
-					r.Header.Set("Content-length", "18")
+					r.Header.Set("Signature", `keyId="Test",algorithm="RSA-SHA256",created=1592250027,`+
+						`expires=1907610027,headers="(request-target) (created) (expires)",signature="bkvd0hHZXBr`+
+						`PMNtS2+B6VdAwjJVN4j2KKbWdGVGU0z06SM+BX2/cftybwxm7gDSA76hUWbFXaVIndWbNMmaBuwY8t+LScIOXQoY`+
+						`WrWLujBhuLuA2mxkjYVbfvpVYhleaODLYBifcBUJORHdgaCUwIeXjDRR64k2+rnsVr8ci1g0="`)
 					return r
 				})(),
 			},
 			want:        true,
 			wantErrType: testHSErrType,
 			wantErrMsg:  "",
+		},
+		{
+			name: "Expired signature",
+			args: args{
+				r: (func() *http.Request {
+					r := testGetRequest()
+					r.Header.Set("Signature", `keyId="Test",algorithm="RSA-SHA256",created=1592250204,`+
+						`expires=1592250214,headers="(request-target) (created) (expires)",signature="jad1Yyk0aDS`+
+						`bro29kzTmp6CigkCkY/mOdges6HjSf4ucqnIQJjs9XFfKkALj2/tOEZ5nwpcWJ7cnyHmadAa1/p9IimYlsHEftZn`+
+						`b2GdKEe+FGFvbGTPHrskrPImBO8HU2dYLKZt22l4FI9sRXsZBbfrCGmJcnSmsfPblQ1ZxjVU="`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "signature expired",
+		},
+		{
+			name: "Signature in future",
+			args: args{
+				r: (func() *http.Request {
+					r := testGetRequest()
+					r.Header.Set("Signature", `keyId="Test",algorithm="RSA-SHA256",created=2222979288,`+
+						`headers="(request-target) (created)",signature="du8s0D8aK+KV40cT3pxNG3A/m1EnCoNqWNnkWX7U`+
+						`Udo+8ONwan92RJn5AVMPzQn/KMOUTfDBNP7q37naTUAcG0dreyakJckaqJ8yrbaVcb8MOgt0r82F0dWQ/NOprTi6`+
+						`NOFZWu0HtypU4uAqBxSSPzsOv8d61WKqfsseaIgQ3ws="`)
+					return r
+				})(),
+			},
+			want:        false,
+			wantErrType: testHSErrType,
+			wantErrMsg:  "signature in future",
 		},
 		{
 			name: "No Signature header",
@@ -273,10 +299,11 @@ func TestVerify(t *testing.T) {
 
 func TestSign(t *testing.T) {
 	type args struct {
-		secretKeyID    string
-		r              *http.Request
-		defaultDigest  string
-		defaultHeaders []string
+		secretKeyID       string
+		r                 *http.Request
+		defaultDigest     string
+		defaultHeaders    []string
+		defaultExpiresSec uint32
 	}
 	tests := []struct {
 		name        string
@@ -356,12 +383,45 @@ func TestSign(t *testing.T) {
 				`signature="VtEbFMQR4nD6VygasRJtJ02k10S7dbJ01D7vWFvib2zLN5eQDIzF9SgxR4kBTNWyP2Da5p9miDDPEk2QX/hm5HuzS` +
 				`FrfuTCbr8I7YRuaiQlEW9KpjmuopAlaRji6iuJ2Zd+psbS335bF7eyl17M8QPR6tc7vI3EVmodcgitJlvs="`,
 		},
+		{
+			name: "Create signature with provided digest header OK",
+			args: args{
+				secretKeyID: "Test",
+				r: (func() *http.Request {
+					r := testGetRequest()
+					r.Header.Set(testContentTypeHeader, testContentTypeJSON)
+					r.Header.Set(digestHeader, "MD5=Sd/dVLAcvNLSq16eXua5uQ==")
+					return r
+				})(),
+				defaultHeaders: []string{requestTarget, "content-type", "digest"},
+			},
+			want: true,
+			wantHeader: `keyId="Test",algorithm="RSA-SHA256",headers="(request-target) content-type digest",` +
+				`signature="HiyUUwPhPQN87l+Q66maNh9lcB0qrwpovsEIKVGmWCoEHZChE581R454BhWMwafjFVMHo3bFG0ze2iV3` +
+				`dCyOnOUQWr6AEq/Vq0UCXV5lkrbb6lown098tY8WDu+HY5gl4rq5Jx9oB6u3jNDItU8cWJPr73txHfEsbDMF65xleg4="`,
+		},
+		{
+			name: "Create signature with calculated digest header OK",
+			args: args{
+				secretKeyID: "Test",
+				r: (func() *http.Request {
+					r := testGetRequest()
+					return r
+				})(),
+				defaultHeaders: []string{requestTarget, "digest"},
+			},
+			want: true,
+			wantHeader: `keyId="Test",algorithm="RSA-SHA256",headers="(request-target) digest",signature="h2s70hWiWXg` +
+				`cKDYQq+As7GYlb2AYCEhErhyOwsdk4kTfHDO49XFH+qsXg+r71bJlaa6ouQd1GQkIPkDgxJM3RsqQRGbJ94wasWGxJrJGkxV4KaF` +
+				`r6p/i3kMAs4p09q2Sqb/WYbCrpZWUiziA/FUOLfZGWIfDKjLBPuwVmtqZQnc="`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hs := NewHTTPSignatures(testSecretsStorage)
 			hs.SetDigestAlgorithm(testErrAlg{})
 			hs.SetSignatureAlgorithm(TestRsaErr{})
+			hs.SetDefaultExpiresSeconds(tt.args.defaultExpiresSec)
 			if len(tt.args.defaultDigest) > 0 {
 				_ = hs.SetDefaultDigestAlgorithm(tt.args.defaultDigest)
 			}
@@ -399,7 +459,7 @@ func TestHSCrossCheck(t *testing.T) {
 					r.Header.Set(testContentTypeHeader, testContentTypeJSON)
 					return r
 				})(),
-				defaultHeaders: []string{requestTarget, "content-type"},
+				defaultHeaders: []string{requestTarget, "(created)", "(expires)", "content-type"},
 			},
 			want: true,
 		},
@@ -682,15 +742,6 @@ func TestHSSetSignatureAlgorithm(t *testing.T) {
 	}
 }
 
-func TestHSSetDefaultExpiresSeconds(t *testing.T) {
-	var defaultExpiresSec int64 = 123
-	hs := NewHTTPSignatures(testSecretsStorage)
-	hs.SetDefaultExpiresSeconds(defaultExpiresSec)
-	if hs.defaultExpiresSec != defaultExpiresSec {
-		t.Error("defaultExpiresSec not set")
-	}
-}
-
 func TestHSBuildSignatureHeader(t *testing.T) {
 	tests := []struct {
 		name string
@@ -740,6 +791,24 @@ func TestHSSetDefaultSignatureHeaders(t *testing.T) {
 	hs.SetDefaultSignatureHeaders(defaultHeaders)
 	if !reflect.DeepEqual(hs.defaultHeaders, defaultHeaders) {
 		t.Errorf("got headers  = %v,\nwant headers = %v", hs.defaultHeaders, defaultHeaders)
+	}
+}
+
+func TestHSSetDefaultTimeGap(t *testing.T) {
+	defaultTimeGap := time.Duration(100)
+	hs := NewHTTPSignatures(testSecretsStorage)
+	hs.SetDefaultTimeGap(defaultTimeGap)
+	if hs.defaultTimeGap != defaultTimeGap {
+		t.Errorf("SetDefaultTimeGap failed")
+	}
+}
+
+func TestHSSetDefaultVerifyDigest(t *testing.T) {
+	verifyDigest := false
+	hs := NewHTTPSignatures(testSecretsStorage)
+	hs.SetDefaultVerifyDigest(verifyDigest)
+	if hs.defaultVerifyDigest != verifyDigest {
+		t.Errorf("SetDefaultVerifyDigest failed")
 	}
 }
 

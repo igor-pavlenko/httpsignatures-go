@@ -385,7 +385,7 @@ func (p *Parser) setKeyValue() *ParserError {
 func (p *Parser) intToTime(v []byte) (time.Time, error) {
 	var err error
 	var sec int64
-	if sec, err = strconv.ParseInt(string(v), 10, 32); err != nil {
+	if sec, err = strconv.ParseInt(string(v), 10, 64); err != nil {
 		return time.Unix(0, 0), err
 	}
 	return time.Unix(sec, 0), nil

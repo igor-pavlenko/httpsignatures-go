@@ -14,12 +14,15 @@ const (
 	signatureHeader = "Signature"
 	digestHeader    = "Digest"
 	requestTarget   = "(request-target)"
-	created         = "(created)"
-	expires         = "(expires)"
+	created         = "(" + paramCreated + ")"
+	expires         = "(" + paramExpires + ")"
 )
 
 // Default expires param value (seconds)
 const defaultExpiresSec = 30
+
+// Default time gap for created, expires validation (+/- seconds)
+const defaultTimeGap = 10
 
 // Error errors during validating or creating Signature|Authorization
 type Error struct {
@@ -40,11 +43,13 @@ func (e *Error) Error() string {
 
 // HTTPSignatures struct
 type HTTPSignatures struct {
-	ss                *SecretsStorage
-	d                 *Digest
-	alg               map[string]SignatureHashAlgorithm
-	defaultExpiresSec int64
-	defaultHeaders    []string
+	ss                  *SecretsStorage
+	d                   *Digest
+	alg                 map[string]SignatureHashAlgorithm
+	defaultExpiresSec   uint32
+	defaultTimeGap      time.Duration
+	defaultHeaders      []string
+	defaultVerifyDigest bool
 }
 
 // NewHTTPSignatures Constructor
@@ -62,7 +67,9 @@ func NewHTTPSignatures(ss *SecretsStorage) *HTTPSignatures {
 		algHmacSha512:      HmacSha512{},
 	}
 	hs.defaultExpiresSec = defaultExpiresSec
+	hs.defaultTimeGap = defaultTimeGap
 	hs.defaultHeaders = []string{"(created)"}
+	hs.defaultVerifyDigest = true
 	return hs
 }
 
@@ -77,9 +84,14 @@ func (hs *HTTPSignatures) SetDefaultDigestAlgorithm(a string) error {
 }
 
 // SetDefaultExpiresSeconds set default expires seconds (while creating signature).
-// If set to 0 — signature never expires
-func (hs *HTTPSignatures) SetDefaultExpiresSeconds(e int64) {
+// If signature never expires just exclude "expires" param from the headers list
+func (hs *HTTPSignatures) SetDefaultExpiresSeconds(e uint32) {
 	hs.defaultExpiresSec = e
+}
+
+// SetDefaultTimeGap set default time gap for (created)/(expires) validation
+func (hs *HTTPSignatures) SetDefaultTimeGap(t time.Duration) {
+	hs.defaultTimeGap = t
 }
 
 // SetDefaultSignatureHeaders set default list of headers to create signature (Sign method)
@@ -90,6 +102,11 @@ func (hs *HTTPSignatures) SetDefaultSignatureHeaders(h []string) {
 // SetSignatureAlgorithm set custom signature hash algorithm
 func (hs *HTTPSignatures) SetSignatureAlgorithm(a SignatureHashAlgorithm) {
 	hs.alg[strings.ToUpper(a.Algorithm())] = a
+}
+
+// SetDefaultVerifyDigest set default verify digest or skip verification
+func (hs *HTTPSignatures) SetDefaultVerifyDigest(v bool) {
+	hs.defaultVerifyDigest = v
 }
 
 // Verify Verify signature
@@ -113,6 +130,32 @@ func (hs *HTTPSignatures) Verify(r *http.Request) error {
 		return pErr
 	}
 
+	// Verify expires (must be lower than now() +/- time gap)
+	if hs.inHeaders(expires, sh.headers) {
+		now := time.Now()
+		max := sh.expires.Add(hs.defaultTimeGap)
+		if now.After(max) {
+			return &Error{"signature expired", nil}
+		}
+	}
+
+	// Verify created (can not be in future)
+	if hs.inHeaders(created, sh.headers) {
+		now := time.Now()
+		max := now.Add(hs.defaultTimeGap)
+		if sh.created.After(max) {
+			return &Error{"signature in future", nil}
+		}
+	}
+
+	// Verify digest
+	if hs.defaultVerifyDigest {
+		err := hs.verifyDigest(sh.headers, r)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Check keyID & algorithm
 	secret, err := hs.ss.Get(sh.keyID)
 	if err != nil {
@@ -132,18 +175,11 @@ func (hs *HTTPSignatures) Verify(r *http.Request) error {
 		}
 	}
 
-	// Verify digest
-	err = hs.verifyDigest(sh.headers, r)
-	if err != nil {
-		return err
-	}
-
 	// Create signature string
 	sigStr, err := hs.buildSignatureString(sh, r)
 	if err != nil {
 		return &Error{"build signature string error", err}
 	}
-	// @todo: Validate headers param.
 	if len(sigStr) == 0 {
 		return &Error{"empty string for signature", nil}
 	}
@@ -194,11 +230,15 @@ func (hs *HTTPSignatures) Sign(secretKeyID string, r *http.Request) error {
 		headers.expires = time.Now().Add(time.Second * time.Duration(hs.defaultExpiresSec))
 	}
 	// Create digest & set it to request header
-	d, err := hs.createDigest(headers.headers, r)
-	if err != nil {
-		return err
+	// Proceed only if digest header not set
+	digest := r.Header.Get(digestHeader)
+	if len(digest) == 0 {
+		d, err := hs.createDigest(headers.headers, r)
+		if err != nil {
+			return err
+		}
+		r.Header.Set(digestHeader, d)
 	}
-	r.Header.Set(digestHeader, d)
 
 	sigStr, err := hs.buildSignatureString(headers, r)
 	if err != nil {

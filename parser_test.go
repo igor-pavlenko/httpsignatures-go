@@ -304,11 +304,11 @@ func TestParserParseCreatedExpires(t *testing.T) {
 		{
 			name: "Wrong created INT value",
 			args: args{
-				header: `created=9223372036854775807`,
+				header: `created=18446744073709551615`,
 			},
 			want:        Headers{},
 			wantErrType: testParserErrType,
-			wantErrMsg: "ParserError: wrong 'created' param value: strconv.ParseInt: parsing \"9223372036854775807\"" +
+			wantErrMsg: "ParserError: wrong 'created' param value: strconv.ParseInt: parsing \"18446744073709551615\"" +
 				": value out of range",
 		},
 		{
@@ -334,11 +334,11 @@ func TestParserParseCreatedExpires(t *testing.T) {
 		{
 			name: "Wrong expires INT value",
 			args: args{
-				header: `expires=9223372036854775807`,
+				header: `expires=18446744073709551615`,
 			},
 			want:        Headers{},
 			wantErrType: testParserErrType,
-			wantErrMsg: "ParserError: wrong 'expires' param value: strconv.ParseInt: parsing \"9223372036854775807\"" +
+			wantErrMsg: "ParserError: wrong 'expires' param value: strconv.ParseInt: parsing \"18446744073709551615\"" +
 				": value out of range",
 		},
 		{
