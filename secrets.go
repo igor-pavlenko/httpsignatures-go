@@ -32,20 +32,20 @@ type Secret struct {
 	Algorithm  string
 }
 
-// SecretsStorage local static secrets storage
-type SecretsStorage struct {
+// SimpleSecretsStorage local static secrets storage
+type SimpleSecretsStorage struct {
 	storage map[string]Secret
 }
 
-// NewSecretsStorage create new digest
-func NewSecretsStorage(storage map[string]Secret) *SecretsStorage {
-	s := new(SecretsStorage)
+// NewSimpleSecretsStorage create new digest
+func NewSimpleSecretsStorage(storage map[string]Secret) Secrets {
+	s := new(SimpleSecretsStorage)
 	s.storage = storage
 	return s
 }
 
 // Get get secret from local storage by KeyID
-func (s SecretsStorage) Get(keyID string) (Secret, error) {
+func (s SimpleSecretsStorage) Get(keyID string) (Secret, error) {
 	if secret, ok := s.storage[keyID]; ok {
 		return secret, nil
 	}

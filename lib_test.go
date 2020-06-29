@@ -195,7 +195,7 @@ func (a TestRsaErr) Verify(secret Secret, data []byte, signature []byte) error {
 	return errors.New("verify error")
 }
 
-var testSecretsStorage = NewSecretsStorage(map[string]Secret{
+var testSecretsStorage = NewSimpleSecretsStorage(map[string]Secret{
 	"Test": {
 		KeyID:      "Test",
 		PrivateKey: testRsaPrivateKey1024,

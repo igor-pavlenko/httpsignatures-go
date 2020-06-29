@@ -43,7 +43,7 @@ func (e *Error) Error() string {
 
 // HTTPSignatures struct
 type HTTPSignatures struct {
-	ss                  *SecretsStorage
+	ss                  Secrets
 	d                   *Digest
 	alg                 map[string]SignatureHashAlgorithm
 	defaultExpiresSec   uint32
@@ -53,7 +53,7 @@ type HTTPSignatures struct {
 }
 
 // NewHTTPSignatures Constructor
-func NewHTTPSignatures(ss *SecretsStorage) *HTTPSignatures {
+func NewHTTPSignatures(ss Secrets) *HTTPSignatures {
 	hs := new(HTTPSignatures)
 	hs.ss = ss
 	hs.d = NewDigest()
@@ -83,6 +83,16 @@ func (hs *HTTPSignatures) SetDefaultDigestAlgorithm(a string) error {
 	return hs.d.SetDefaultDigestHashAlgorithm(a)
 }
 
+// SetDefaultVerifyDigest set default verify digest or skip verification
+func (hs *HTTPSignatures) SetDefaultVerifyDigest(v bool) {
+	hs.defaultVerifyDigest = v
+}
+
+// SetSignatureHashAlgorithm set custom signature hash algorithm
+func (hs *HTTPSignatures) SetSignatureHashAlgorithm(a SignatureHashAlgorithm) {
+	hs.alg[strings.ToUpper(a.Algorithm())] = a
+}
+
 // SetDefaultExpiresSeconds set default expires seconds (while creating signature).
 // If signature never expires just exclude "expires" param from the headers list
 func (hs *HTTPSignatures) SetDefaultExpiresSeconds(e uint32) {
@@ -90,23 +100,13 @@ func (hs *HTTPSignatures) SetDefaultExpiresSeconds(e uint32) {
 }
 
 // SetDefaultTimeGap set default time gap for (created)/(expires) validation
-func (hs *HTTPSignatures) SetDefaultTimeGap(t time.Duration) {
-	hs.defaultTimeGap = t
+func (hs *HTTPSignatures) SetDefaultTimeGap(t int64) {
+	hs.defaultTimeGap = time.Duration(t)
 }
 
 // SetDefaultSignatureHeaders set default list of headers to create signature (Sign method)
 func (hs *HTTPSignatures) SetDefaultSignatureHeaders(h []string) {
 	hs.defaultHeaders = h
-}
-
-// SetSignatureAlgorithm set custom signature hash algorithm
-func (hs *HTTPSignatures) SetSignatureAlgorithm(a SignatureHashAlgorithm) {
-	hs.alg[strings.ToUpper(a.Algorithm())] = a
-}
-
-// SetDefaultVerifyDigest set default verify digest or skip verification
-func (hs *HTTPSignatures) SetDefaultVerifyDigest(v bool) {
-	hs.defaultVerifyDigest = v
 }
 
 // Verify Verify signature

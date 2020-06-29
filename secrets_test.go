@@ -8,7 +8,7 @@ import (
 
 const testSecretErrType = "*httpsignatures.SecretError"
 
-func TestNewSecretsStorage(t *testing.T) {
+func TestNewSimpleSecretsStorage(t *testing.T) {
 	storageExample := map[string]Secret{
 		"k1": {
 			KeyID:      "k1",
@@ -29,15 +29,15 @@ func TestNewSecretsStorage(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *SecretsStorage
+		want Secrets
 	}{
 		{
-			name: "Valid NewSecretsStorage",
+			name: "Valid NewSimpleSecretsStorage",
 			args: args{
 				storage: storageExample,
 			},
-			want: (func() *SecretsStorage {
-				s := new(SecretsStorage)
+			want: (func() *SimpleSecretsStorage {
+				s := new(SimpleSecretsStorage)
 				s.storage = storageExample
 				return s
 			})(),
@@ -45,7 +45,7 @@ func TestNewSecretsStorage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewSecretsStorage(tt.args.storage)
+			got := NewSimpleSecretsStorage(tt.args.storage)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf(tt.name+"\ngot  = %v,\nwant = %v", got, tt.want)
 			}
@@ -53,7 +53,7 @@ func TestNewSecretsStorage(t *testing.T) {
 	}
 }
 
-func TestSecretsStorageGet(t *testing.T) {
+func TestSimpleSecretsStorageGet(t *testing.T) {
 	storageExample := map[string]Secret{
 		"k1": {
 			KeyID:      "k1",
@@ -73,7 +73,7 @@ func TestSecretsStorageGet(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name: "Valid SecretsStorage Get",
+			name: "Valid SimpleSecretsStorage Get",
 			args: args{
 				keyID: "k1",
 			},
@@ -93,7 +93,7 @@ func TestSecretsStorageGet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewSecretsStorage(storageExample)
+			s := NewSimpleSecretsStorage(storageExample)
 			got, err := s.Get(tt.args.keyID)
 			assert(t, got, err, tt.wantErrType, tt.name, tt.want, tt.wantErrMsg)
 		})

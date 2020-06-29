@@ -19,7 +19,7 @@ func testGetRequest() *http.Request {
 }
 
 func TestNewHttpSignatures(t *testing.T) {
-	ss := NewSecretsStorage(map[string]Secret{
+	ss := NewSimpleSecretsStorage(map[string]Secret{
 		"key1": {
 			KeyID:      "key1",
 			PrivateKey: "SecretPrivateKey1",
@@ -27,7 +27,7 @@ func TestNewHttpSignatures(t *testing.T) {
 		},
 	})
 	type args struct {
-		ss *SecretsStorage
+		ss Secrets
 	}
 	tests := []struct {
 		name       string
@@ -37,7 +37,7 @@ func TestNewHttpSignatures(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name: "Valid NewSecretsStorage",
+			name: "Valid NewSimpleSecretsStorage",
 			args: args{
 				ss: ss,
 			},
@@ -420,7 +420,7 @@ func TestSign(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hs := NewHTTPSignatures(testSecretsStorage)
 			hs.SetDigestAlgorithm(testErrAlg{})
-			hs.SetSignatureAlgorithm(TestRsaErr{})
+			hs.SetSignatureHashAlgorithm(TestRsaErr{})
 			hs.SetDefaultExpiresSeconds(tt.args.defaultExpiresSec)
 			if len(tt.args.defaultDigest) > 0 {
 				_ = hs.SetDefaultDigestAlgorithm(tt.args.defaultDigest)
@@ -734,9 +734,9 @@ func TestHSSetDigestAlgorithm(t *testing.T) {
 	}
 }
 
-func TestHSSetSignatureAlgorithm(t *testing.T) {
+func TestHSSetSignatureHashAlgorithm(t *testing.T) {
 	hs := NewHTTPSignatures(testSecretsStorage)
-	hs.SetSignatureAlgorithm(RsaDummy{})
+	hs.SetSignatureHashAlgorithm(RsaDummy{})
 	if _, ok := hs.alg[testRsaDummyName]; ok == false {
 		t.Error("algorithm not found")
 	}
@@ -795,10 +795,11 @@ func TestHSSetDefaultSignatureHeaders(t *testing.T) {
 }
 
 func TestHSSetDefaultTimeGap(t *testing.T) {
-	defaultTimeGap := time.Duration(100)
+	var defaultTimeGap int64 = 100
+	timeGapDuration := time.Duration(defaultTimeGap)
 	hs := NewHTTPSignatures(testSecretsStorage)
 	hs.SetDefaultTimeGap(defaultTimeGap)
-	if hs.defaultTimeGap != defaultTimeGap {
+	if hs.defaultTimeGap != timeGapDuration {
 		t.Errorf("SetDefaultTimeGap failed")
 	}
 }

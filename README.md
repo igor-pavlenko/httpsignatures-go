@@ -26,7 +26,11 @@ draft-ietf-httpbis-message-signatures-{MINOR} | v0.{MINOR}.0
 Final release                                 | v1.0.0
 
 ## Installation
-To install specific version, use:
+To install the module:
+
+`go get github.com/igor-pavlenko/httpsignatures.go`
+
+To install a specific version, use:
 
 `go get github.com/igor-pavlenko/httpsignatures.go@v0.0.1`
 
@@ -36,8 +40,61 @@ To install specific version, use:
 
 ## Settings
 
-## @todo:
-* Documentation
+### Custom Secrets Storage
+
+### Custom Digest hash algorithm
+
+### Default Digest algorithm
+
+### Disable/Enable verify Digest function
+If digest header set in signature headers — module will verify it. To disable verification use `SetDefaultVerifyDigest`
+method.
+```go
+hs := NewHTTPSignatures(NewSimpleSecretsStorage(map[string]Secret{}))
+hs.SetDefaultVerifyDigest(false)
+```
+
+### Custom Signature hash algorithm
+You can set your custom signature hash algorithm by implementing the `SignatureHashAlgorithm` interface.
+
+### Default expires seconds
+By default, signature will expire in 30 seconds. You can set custom value for expiration using `SetDefaultExpiresSeconds`
+method.
+```go
+hs := NewHTTPSignatures(NewSimpleSecretsStorage(map[string]Secret{}))
+hs.SetDefaultExpiresSeconds(60)
+```
+
+### Default time gap for time expires/created verification
+Default time gap is 10 seconds. To set custom time gap use `SetDefaultTimeGap` method.
+```go
+hs := NewHTTPSignatures(NewSimpleSecretsStorage(map[string]Secret{}))
+hs.SetDefaultTimeGap(100)
+````
+
+### Default signature headers
+By default, headers used in signature: ["(created)"]. Use `SetDefaultSignatureHeaders` method to set custom list
+of headers.
+```go
+hs := NewHTTPSignatures(NewSimpleSecretsStorage(map[string]Secret{}))
+hs.SetDefaultSignatureHeaders([]string{"(request-target)", "(created)", "(expires)", "date", "host", "digest"})
+````
+
+## Supported Signature hash algorithms
+* RSASSA-PSS with SHA256
+* RSASSA-PSS with SHA512
+* ECDSA with SHA256
+* RSA-SHA256
+* RSA-SHA512
+* HMAC-SHA256
+* HMAC-SHA512
+
+## Supported Digest hash algorithms
+* MD5
+* SHA256
+* SHA512
+
+## Todo:
 * Gin plugin
-* Crypto
+* Add signature hash algorithm:
   * https://golang.org/pkg/crypto/ed25519/
