@@ -98,7 +98,9 @@ func (a algSha1) Verify(data []byte, digest []byte) error {
 
 func main() {
 	hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
+    // Add algorithm implementation
 	hs.SetDigestAlgorithm(algSha1{})
+    // Set `algSha1Name` as default algorithm for digest
 	err := hs.SetDefaultDigestAlgorithm(algSha1Name)
 	if err != nil {
 		fmt.Println(err)
@@ -110,7 +112,7 @@ func main() {
 Choose on of supported digest hash algorithms with method `SetDefaultDigestAlgorithm`.
 ```go
 hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
-hs.SetDefaultVerifyDigest("MD5")
+hs.SetDefaultDigestAlgorithm("MD5")
 ```
 
 ### Disable/Enable verify Digest function
@@ -136,7 +138,7 @@ hs.SetDefaultExpiresSeconds(60)
 Default time gap is 10 seconds. To set custom time gap use `SetDefaultTimeGap` method.
 ```go
 hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
-hs.SetDefaultExpiresSeconds(100)
+hs.SetDefaultTimeGap(100)
 ````
 
 ### Default signature headers
