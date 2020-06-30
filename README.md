@@ -32,7 +32,9 @@ To install the module:
 
 To install a specific version, use:
 
-`go get github.com/igor-pavlenko/httpsignatures.go@v0.0.1`
+`go get github.com/igor-pavlenko/httpsignatures.go@v0.0.3`
+
+Don't forget: `export GO111MODULE=on`
 
 ## Sign
 
@@ -43,14 +45,79 @@ To install a specific version, use:
 ### Custom Secrets Storage
 
 ### Custom Digest hash algorithm
+You can set your custom signature hash algorithm by implementing the `DigestHashAlgorithm` interface.
+```go
+package main
+
+import (
+	"crypto/sha1"
+	"crypto/subtle"
+	"fmt"
+	"github.com/igor-pavlenko/httpsignatures.go"
+)
+
+// To create new digest algorithm, implement httpsignatures.DigestHashAlgorithm interface
+// type DigestHashAlgorithm interface {
+//	 Algorithm() string
+//	 Create(data []byte) ([]byte, error)
+// 	 Verify(data []byte, digest []byte) error
+// }
+
+// Digest algorithm name
+const algSha1Name = "sha1"
+
+// algSha1 sha1 Algorithm
+type algSha1 struct{}
+
+// Algorithm Return algorithm name
+func (a algSha1) Algorithm() string {
+	return algSha1Name
+}
+
+// Create Create hash
+func (a algSha1) Create(data []byte) ([]byte, error) {
+	h := sha1.New()
+	_, err := h.Write(data)
+	if err != nil {
+		return nil, &httpsignatures.CryptoError{Message: "error creating hash", Err: err}
+	}
+	return h.Sum(nil), nil
+}
+
+// Verify Verify hash
+func (a algSha1) Verify(data []byte, digest []byte) error {
+	expected, err := a.Create(data)
+	if err != nil {
+		return err
+	}
+	if subtle.ConstantTimeCompare(digest, expected) != 1 {
+		return &httpsignatures.CryptoError{Message: "wrong hash"}
+	}
+	return nil
+}
+
+func main() {
+	hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
+	hs.SetDigestAlgorithm(algSha1{})
+	err := hs.SetDefaultDigestAlgorithm(algSha1Name)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
 
 ### Default Digest algorithm
+Choose on of supported digest hash algorithms with method `SetDefaultDigestAlgorithm`.
+```go
+hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
+hs.SetDefaultVerifyDigest("MD5")
+```
 
 ### Disable/Enable verify Digest function
 If digest header set in signature headers — module will verify it. To disable verification use `SetDefaultVerifyDigest`
 method.
 ```go
-hs := NewHTTPSignatures(NewSimpleSecretsStorage(map[string]Secret{}))
+hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
 hs.SetDefaultVerifyDigest(false)
 ```
 
@@ -58,25 +125,25 @@ hs.SetDefaultVerifyDigest(false)
 You can set your custom signature hash algorithm by implementing the `SignatureHashAlgorithm` interface.
 
 ### Default expires seconds
-By default, signature will expire in 30 seconds. You can set custom value for expiration using `SetDefaultExpiresSeconds`
-method.
+By default, signature will expire in 30 seconds. You can set custom value for expiration using 
+`SetDefaultExpiresSeconds` method.
 ```go
-hs := NewHTTPSignatures(NewSimpleSecretsStorage(map[string]Secret{}))
+hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
 hs.SetDefaultExpiresSeconds(60)
 ```
 
-### Default time gap for time expires/created verification
+### Default time gap for expires/created time verification
 Default time gap is 10 seconds. To set custom time gap use `SetDefaultTimeGap` method.
 ```go
-hs := NewHTTPSignatures(NewSimpleSecretsStorage(map[string]Secret{}))
-hs.SetDefaultTimeGap(100)
+hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
+hs.SetDefaultExpiresSeconds(100)
 ````
 
 ### Default signature headers
-By default, headers used in signature: ["(created)"]. Use `SetDefaultSignatureHeaders` method to set custom list
-of headers.
+By default, headers used in signature: ["(created)"]. Use `SetDefaultSignatureHeaders` method to set custom headers 
+list.
 ```go
-hs := NewHTTPSignatures(NewSimpleSecretsStorage(map[string]Secret{}))
+hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
 hs.SetDefaultSignatureHeaders([]string{"(request-target)", "(created)", "(expires)", "date", "host", "digest"})
 ````
 
@@ -94,7 +161,7 @@ hs.SetDefaultSignatureHeaders([]string{"(request-target)", "(created)", "(expire
 * SHA256
 * SHA512
 
-## Todo:
+## Todo
 * Gin plugin
 * Add signature hash algorithm:
   * https://golang.org/pkg/crypto/ed25519/
