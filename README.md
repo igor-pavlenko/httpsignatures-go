@@ -43,6 +43,103 @@ Don't forget: `export GO111MODULE=on`
 ## Settings
 
 ### Custom Secrets Storage
+If you have a lot of keys, you can get them from any external storage, for example: DB, Files, Vaults etc.
+Just implement `Secrets` interface and inject it into httpsignatures.
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/igor-pavlenko/httpsignatures.go"
+	"io/ioutil"
+	"os"
+	"regexp"
+)
+
+// To create your own secrets storage implement the httpsignatures.Secrets interface
+// type Secrets interface {
+//	   Get(keyID string) (Secret, error)
+// }
+
+const alg = "RSA-SHA512"
+
+// SimpleSecretsStorage local static secrets storage
+type FileSecretsStorage struct {
+	dir     string
+	storage map[string]httpsignatures.Secret
+}
+
+// Get get secret from local files by KeyID
+func (s FileSecretsStorage) Get(keyID string) (httpsignatures.Secret, error) {
+	if secret, ok := s.storage[keyID]; ok {
+		return secret, nil
+	}
+
+	validKeyID, err := regexp.Match(`[a-zA-Z0-9]+`, []byte(keyID))
+	if !validKeyID {
+		return httpsignatures.Secret{}, &httpsignatures.SecretError{Message: "wrong keyID format allowed: [a-zA-Z0-9]+"}
+	}
+
+	publicKeyFile := fmt.Sprintf("%s/%s.pub", s.dir, keyID)
+	publicKey, err := s.readFile(publicKeyFile)
+	if err != nil {
+		return httpsignatures.Secret{}, &httpsignatures.SecretError{Message: "public key file not found", Err: err}
+	}
+
+	privateKeyFile := fmt.Sprintf("%s/%s.key", s.dir, keyID)
+	privateKey, err := s.readFile(privateKeyFile)
+	if err != nil {
+		return httpsignatures.Secret{}, &httpsignatures.SecretError{Message: "private key file not found", Err: err}
+	}
+
+	fmt.Println(privateKey, publicKey)
+	s.storage[keyID] = httpsignatures.Secret{
+		KeyID:      keyID,
+		PublicKey:  publicKey,
+		PrivateKey: privateKey,
+		Algorithm:  alg,
+	}
+	return s.storage[keyID], nil
+}
+
+// Get key from file
+func (s FileSecretsStorage) readFile(f string) (string, error) {
+	if !s.fileExists(f) {
+		return "", &httpsignatures.SecretError{Message: fmt.Sprintf("file '%s' not found", f)}
+	}
+	key, err := ioutil.ReadFile(f)
+	if err != nil {
+		return "", &httpsignatures.SecretError{Message: fmt.Sprintf("read file error: '%s'", f), Err: err}
+	}
+
+	return string(key), nil
+}
+
+// Check if file exists
+func (s FileSecretsStorage) fileExists(f string) bool {
+	i, err := os.Stat(f)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !i.IsDir()
+}
+
+// NewSimpleSecretsStorage create new digest
+func NewFileSecretsStorage(dir string) httpsignatures.Secrets {
+    if len(dir) == 0 {
+		return nil
+	}
+	s := new(FileSecretsStorage)
+	s.dir = dir
+	s.storage = make(map[string]httpsignatures.Secret)
+	return s
+}
+
+func main() {
+	hs := httpsignatures.NewHTTPSignatures(NewFileSecretsStorage("/tmp"))
+	hs.SetDefaultExpiresSeconds(10)
+}
+```
 
 ### Custom Digest hash algorithm
 You can set your custom signature hash algorithm by implementing the `DigestHashAlgorithm` interface.
@@ -98,9 +195,9 @@ func (a algSha1) Verify(data []byte, digest []byte) error {
 
 func main() {
 	hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
-    // Add algorithm implementation
+	// Add algorithm implementation
 	hs.SetDigestAlgorithm(algSha1{})
-    // Set `algSha1Name` as default algorithm for digest
+	// Set `algSha1Name` as default algorithm for digest
 	err := hs.SetDefaultDigestAlgorithm(algSha1Name)
 	if err != nil {
 		fmt.Println(err)
@@ -109,7 +206,7 @@ func main() {
 ```
 
 ### Default Digest algorithm
-Choose on of supported digest hash algorithms with method `SetDefaultDigestAlgorithm`.
+Choose one of supported digest hash algorithms with method `SetDefaultDigestAlgorithm`.
 ```go
 hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
 hs.SetDefaultDigestAlgorithm("MD5")
@@ -124,7 +221,64 @@ hs.SetDefaultVerifyDigest(false)
 ```
 
 ### Custom Signature hash algorithm
-You can set your custom signature hash algorithm by implementing the `SignatureHashAlgorithm` interface.
+You can set your own custom signature hash algorithm by implementing the `SignatureHashAlgorithm` interface.
+```go
+package main
+
+import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"github.com/igor-pavlenko/httpsignatures.go"
+)
+
+// To create your own signature hash algorithm, implement httpsignatures.SignatureHashAlgorithm interface
+// type SignatureHashAlgorithm interface {
+// 	   Algorithm() string
+// 	   Create(secret Secret, data []byte) ([]byte, error)
+// 	   Verify(secret Secret, data []byte, signature []byte) error
+// }
+
+// Digest algorithm name
+const algHmacSha1Name = "HMAC-SHA1"
+
+// algHmacSha1 HMAC-SHA1 Algorithm
+type algHmacSha1 struct{}
+
+// Algorithm Return algorithm name
+func (a algHmacSha1) Algorithm() string {
+	return algHmacSha1Name
+}
+
+// Create Create hash
+func (a algHmacSha1) Create(secret httpsignatures.Secret, data []byte) ([]byte, error) {
+	if len(secret.PrivateKey) == 0 {
+		return nil, &httpsignatures.CryptoError{Message: "no private key found"}
+	}
+	mac := hmac.New(sha1.New, []byte(secret.PrivateKey))
+	_, err := mac.Write(data)
+	if err != nil {
+		return nil, &httpsignatures.CryptoError{Message: "error creating signature", Err: err}
+	}
+	return mac.Sum(nil), nil
+}
+
+// Verify Verify hash
+func (a algHmacSha1) Verify(secret httpsignatures.Secret, data []byte, signature []byte) error {
+	expected, err := a.Create(secret, data)
+	if err != nil {
+		return err
+	}
+	if !hmac.Equal(signature, expected) {
+		return &httpsignatures.CryptoError{Message: "wrong signature"}
+	}
+	return nil
+}
+
+func main() {
+	hs := httpsignatures.NewHTTPSignatures(httpsignatures.NewSimpleSecretsStorage(map[string]httpsignatures.Secret{}))
+	hs.SetSignatureHashAlgorithm(algHmacSha1{})
+}
+```
 
 ### Default expires seconds
 By default, signature will expire in 30 seconds. You can set custom value for expiration using 
