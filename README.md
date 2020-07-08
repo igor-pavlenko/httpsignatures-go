@@ -398,7 +398,9 @@ hs.SetDefaultSignatureHeaders([]string{"(request-target)", "(created)", "(expire
 * SHA256
 * SHA512
 
+## Examples
+Look at [examples](https://github.com/igor-pavlenko/httpsignatures.go/tree/master/examples) & tests to find out how to work with lib.
+
 ## Todo
-* Gin plugin
-* Add signature hash algorithm:
-  * https://golang.org/pkg/crypto/ed25519/
+- [ ] Gin plugin
+- [ ] Add signature hash algorithm ed25519: https://golang.org/pkg/crypto/ed25519/
