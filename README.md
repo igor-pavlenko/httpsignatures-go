@@ -37,14 +37,95 @@ To install a specific version, use:
 Don't forget: `export GO111MODULE=on`
 
 ## Sign
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/igor-pavlenko/httpsignatures.go"
+	"net/http"
+	"strings"
+)
+
+func main() {
+	const sKey = "key1"
+	// Don't put keys into code, neither push it in to git repo (this is just for example)
+	secrets := map[string]httpsignatures.Secret{
+		sKey: {
+			KeyID: sKey,
+			PublicKey: `-----BEGIN PUBLIC KEY-----
+-----END PUBLIC KEY-----`,
+			PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
+-----END RSA PRIVATE KEY-----`,
+			Algorithm: "RSA-SHA256",
+		},
+	}
+	ss := httpsignatures.NewSimpleSecretsStorage(secrets)
+	hs := httpsignatures.NewHTTPSignatures(ss)
+	hs.SetDefaultSignatureHeaders([]string{"(created)", "digest", "(expires)", "(request-target)"})
+
+	r, _ := http.NewRequest(
+		"POST",
+		"https://example.com/foo?param=value&pet=dog",
+		strings.NewReader(`{"hello": "world"}`),
+	)
+	err := hs.Sign(sKey, r)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(r.Header.Get("Digest"))
+	fmt.Println(r.Header.Get("Signature"))
+}
+```
 
 ## Verify
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/igor-pavlenko/httpsignatures.go"
+	"net/http"
+	"strings"
+)
+
+func main() {
+	const sKey = "key1"
+	// Don't put keys into code, neither push it in to git repo (this is just for example)
+	secrets := map[string]httpsignatures.Secret{
+		sKey: {
+			KeyID: sKey,
+			PublicKey: `-----BEGIN PUBLIC KEY-----
+-----END PUBLIC KEY-----`,
+			PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
+-----END RSA PRIVATE KEY-----`,
+			Algorithm: "RSA-SHA256",
+		},
+	}
+	ss := httpsignatures.NewSimpleSecretsStorage(secrets)
+	hs := httpsignatures.NewHTTPSignatures(ss)
+
+	r, _ := http.NewRequest(
+		"POST",
+		"https://example.com/foo?param=value&pet=dog",
+		strings.NewReader(`{"hello": "world"}`),
+	)
+	r.Header.Set("Digest", "SHA-512=WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew==")
+	r.Header.Set("Signature", `keyId="key1",algorithm="RSA-SHA256",created=1594222776,headers="(created) digest (request-target)",signature="HobdANH0pDuVm9ag0Zdy06+1wgPttgSqJIiBI0wmgILrJ3IlZ26KuHPGNTZs2N55SFHCpE1gLnmyKJwLF46hmgdElB7zFreYAGmNhukguoIiQ8slZnOjs2GtZ40kHa+7kO5mqT+i5GaRKwBtRiiFe3nEPxEmrugXEwj5j6DEvl8="`)
+
+	err := hs.Verify(r)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Signature verified")
+}
+```
 
 ## Settings
-
 ### Custom Secrets Storage
 If you have a lot of keys, you can get them from any external storage, for example: DB, Files, Vaults etc.
-Just implement `Secrets` interface and inject it into httpsignatures.
+Just implement `Secrets` interface and inject it into `httpsignatures.NewHTTPSignatures()`.
 ```go
 package main
 
@@ -166,12 +247,12 @@ const algSha1Name = "sha1"
 // algSha1 sha1 Algorithm
 type algSha1 struct{}
 
-// Algorithm Return algorithm name
+// Return algorithm name
 func (a algSha1) Algorithm() string {
 	return algSha1Name
 }
 
-// Create Create hash
+// Create hash
 func (a algSha1) Create(data []byte) ([]byte, error) {
 	h := sha1.New()
 	_, err := h.Write(data)
@@ -181,7 +262,7 @@ func (a algSha1) Create(data []byte) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// Verify Verify hash
+// Verify hash
 func (a algSha1) Verify(data []byte, digest []byte) error {
 	expected, err := a.Create(data)
 	if err != nil {
@@ -244,12 +325,12 @@ const algHmacSha1Name = "HMAC-SHA1"
 // algHmacSha1 HMAC-SHA1 Algorithm
 type algHmacSha1 struct{}
 
-// Algorithm Return algorithm name
+// Return algorithm name
 func (a algHmacSha1) Algorithm() string {
 	return algHmacSha1Name
 }
 
-// Create Create hash
+// Create hash
 func (a algHmacSha1) Create(secret httpsignatures.Secret, data []byte) ([]byte, error) {
 	if len(secret.PrivateKey) == 0 {
 		return nil, &httpsignatures.CryptoError{Message: "no private key found"}
@@ -262,7 +343,7 @@ func (a algHmacSha1) Create(secret httpsignatures.Secret, data []byte) ([]byte, 
 	return mac.Sum(nil), nil
 }
 
-// Verify Verify hash
+// Verify hash
 func (a algHmacSha1) Verify(secret httpsignatures.Secret, data []byte, signature []byte) error {
 	expected, err := a.Create(secret, data)
 	if err != nil {
