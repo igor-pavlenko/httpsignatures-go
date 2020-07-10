@@ -388,6 +388,7 @@ hs.SetDefaultSignatureHeaders([]string{"(request-target)", "(created)", "(expire
 * RSASSA-PSS with SHA256
 * RSASSA-PSS with SHA512
 * ECDSA with SHA256
+* ECDSA with SHA512
 * RSA-SHA256
 * RSA-SHA512
 * HMAC-SHA256

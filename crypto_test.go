@@ -592,7 +592,7 @@ func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
 				data: []byte{},
 				secret: Secret{
 					PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
-		-----END RSA PRIVATE KEY-----`,
+-----END RSA PRIVATE KEY-----`,
 				},
 			},
 			want:        "",
@@ -606,8 +606,8 @@ func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
 				data: []byte{},
 				secret: Secret{
 					PrivateKey: `-----BEGIN EC PRIVATE KEY-----
-		MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
-		-----END EC PRIVATE KEY-----`,
+MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
+-----END EC PRIVATE KEY-----`,
 				},
 			},
 			want:        "",
