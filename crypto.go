@@ -187,7 +187,7 @@ func signatureEcdsaAlgorithmVerify(t string, newHash func() hash.Hash, secret Se
 	_, _ = h.Write(data)
 
 	switch t {
-	case algEcdsaSha256:
+	case algEcdsaSha256, algEcdsaSha512:
 		res := ecdsa.Verify(publicKeyEcdsa, h.Sum(nil), sig.R, sig.S)
 		if !res {
 			return &CryptoError{"signature verification error", nil}
@@ -218,7 +218,7 @@ func signatureEcdsaAlgorithmCreate(t string, newHash func() hash.Hash, secret Se
 	_, _ = h.Write(data)
 
 	switch t {
-	case algEcdsaSha256:
+	case algEcdsaSha256, algEcdsaSha512:
 		r, s, err := ecdsa.Sign(rand.Reader, privateKeyEcdsa, h.Sum(nil))
 		if err != nil {
 			return nil, err

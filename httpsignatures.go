@@ -61,6 +61,7 @@ func NewHTTPSignatures(ss Secrets) *HTTPSignatures {
 		algRsaSsaPssSha256: RsaSsaPssSha256{},
 		algRsaSsaPssSha512: RsaSsaPssSha512{},
 		algEcdsaSha256:     EcdsaSha256{},
+		algEcdsaSha512:     EcdsaSha512{},
 		algRsaSha256:       RsaSha256{},
 		algRsaSha512:       RsaSha512{},
 		algHmacSha256:      HmacSha256{},

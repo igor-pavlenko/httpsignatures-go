@@ -592,7 +592,7 @@ func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
 				data: []byte{},
 				secret: Secret{
 					PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
------END RSA PRIVATE KEY-----`,
+		-----END RSA PRIVATE KEY-----`,
 				},
 			},
 			want:        "",
@@ -606,8 +606,8 @@ func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
 				data: []byte{},
 				secret: Secret{
 					PrivateKey: `-----BEGIN EC PRIVATE KEY-----
-MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
------END EC PRIVATE KEY-----`,
+		MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
+		-----END EC PRIVATE KEY-----`,
 				},
 			},
 			want:        "",
@@ -646,6 +646,26 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			wantErrType: testCryptoErrType,
 			wantErrMsg:  "CryptoError: unknown private key type",
 		},
+		{
+			name: "ECDSA-SHA512 create ok",
+			args: args{
+				alg: EcdsaSha512{},
+				data: []byte(
+					"(request-target): post /foo\n" +
+						"host: " + testHostExample + "\n" +
+						"date: " + testDateExample,
+				),
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testECDSAPrivateKey,
+					PublicKey:  testECDSAPublicKey,
+					Algorithm:  algEcdsaSha512,
+				},
+			},
+			want:        "",
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -653,10 +673,9 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			got, err := tt.args.alg.Create(tt.args.secret, tt.args.data)
 			sig := base64.StdEncoding.EncodeToString(got)
 			// Ecdsa Algorithm generate always different signature
-			var length = 150
 			if err == nil {
-				if len(sig) < length {
-					t.Errorf(tt.name+"\ngot = %v, expected length = %d symbols, but got = %d", sig, length, len(sig))
+				if len(sig) <= 0 {
+					t.Errorf(tt.name+"\ngot = %v, expected length <= 0 symbols", sig)
 				}
 				tt.want = sig
 			}
@@ -1202,6 +1221,28 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			want:        false,
 			wantErrType: testCryptoErrType,
 			wantErrMsg:  "CryptoError: unsupported verify algorithm type ECDSA-DUMMY",
+		},
+		{
+			name: "ECDSA-SHA512 verify ok",
+			args: argsVerify{
+				alg: EcdsaSha512{},
+				sig: `MIGIAkIBO2yE+mzrKdaO4ms3zqfsLHUWELpNO3kqtavcs8VTZ+hg9nBn6h/P8yVxcwYnGhrzfsYKSiUXItqrXXt7laLT8KA` +
+					`CQgDyndFaCyk1UC6YMhDiLU8kdyssPhyzbQBvyJxpaPiQpqsnLHw9+xAeiMUfec9PJag3VMkuHc+zBwaVY2i5/uvk6A==`,
+				data: []byte(
+					"(request-target): post /foo\n" +
+						"host: " + testHostExample + "\n" +
+						"date: " + testDateExample,
+				),
+				secret: Secret{
+					KeyID:      "key1",
+					PrivateKey: testECDSAPrivateKey,
+					PublicKey:  testECDSAPublicKey,
+					Algorithm:  algEcdsaSha512,
+				},
+			},
+			want:        true,
+			wantErrType: testCryptoErrType,
+			wantErrMsg:  "",
 		},
 	}
 
