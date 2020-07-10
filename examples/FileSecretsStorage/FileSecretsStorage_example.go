@@ -15,7 +15,7 @@ import (
 
 const alg = "RSA-SHA512"
 
-// SimpleSecretsStorage local static secrets storage
+// FileSecretsStorage local static secrets storage
 type FileSecretsStorage struct {
 	dir     string
 	storage map[string]httpsignatures.Secret
@@ -76,7 +76,7 @@ func (s FileSecretsStorage) fileExists(f string) bool {
 	return !i.IsDir()
 }
 
-// NewSimpleSecretsStorage create new digest
+// NewFileSecretsStorage create new digest
 func NewFileSecretsStorage(dir string) httpsignatures.Secrets {
 	if len(dir) == 0 {
 		return nil
