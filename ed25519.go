@@ -8,7 +8,7 @@ import (
 
 const algED25519 = "ED25519"
 
-// EcdsaSha256 ECDSA with SHA256 Algorithm
+// ED25519 ED25519 Algorithm
 type ED25519 struct{}
 
 // Algorithm Return algorithm name
