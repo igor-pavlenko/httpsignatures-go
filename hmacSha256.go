@@ -7,8 +7,6 @@ import (
 const algHmacSha256 = "HMAC-SHA256"
 
 // HmacSha256 HMAC-SHA256 Algorithm
-//
-// Deprecated: specifying signature algorithm enables attack vector.
 type HmacSha256 struct{}
 
 // Algorithm Return algorithm name

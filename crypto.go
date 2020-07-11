@@ -43,6 +43,23 @@ type ECDSASignature struct {
 	R, S *big.Int
 }
 
+// ED25519PrivateKey ED25519 PrivateKey
+type ED25519PrivateKey struct {
+	Version          int
+	ObjectIdentifier struct {
+		ObjectIdentifier asn1.ObjectIdentifier
+	}
+	PrivateKey []byte
+}
+
+// ED25519PublicKey ED25519 PublicKey
+type ED25519PublicKey struct {
+	ObjectIdentifier struct {
+		ObjectIdentifier asn1.ObjectIdentifier
+	}
+	PublicKey asn1.BitString
+}
+
 // Error error message
 func (e *CryptoError) Error() string {
 	if e == nil {

@@ -393,6 +393,7 @@ hs.SetDefaultSignatureHeaders([]string{"(request-target)", "(created)", "(expire
 * RSA-SHA512
 * HMAC-SHA256
 * HMAC-SHA512
+* ED25519
 
 ## Supported Digest hash algorithms
 * MD5
@@ -404,4 +405,4 @@ Look at [examples](https://github.com/igor-pavlenko/httpsignatures.go/tree/maste
 
 ## Todo
 - [ ] Gin plugin
-- [ ] Add signature hash algorithm ed25519: https://golang.org/pkg/crypto/ed25519/
+- [ ] AwsSecretsManagerStorage

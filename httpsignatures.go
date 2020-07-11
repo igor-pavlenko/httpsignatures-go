@@ -66,6 +66,7 @@ func NewHTTPSignatures(ss Secrets) *HTTPSignatures {
 		algRsaSha512:       RsaSha512{},
 		algHmacSha256:      HmacSha256{},
 		algHmacSha512:      HmacSha512{},
+		algED25519:         ED25519{},
 	}
 	hs.defaultExpiresSec = defaultExpiresSec
 	hs.defaultTimeGap = defaultTimeGap
