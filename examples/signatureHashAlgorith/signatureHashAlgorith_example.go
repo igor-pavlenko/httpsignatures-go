@@ -27,12 +27,12 @@ func (a algHmacSha1) Algorithm() string {
 // Create Create hash
 func (a algHmacSha1) Create(secret httpsignatures.Secret, data []byte) ([]byte, error) {
 	if len(secret.PrivateKey) == 0 {
-		return nil, &httpsignatures.CryptoError{Message: "no private key found"}
+		return nil, &httpsignatures.ErrCrypto{Message: "no private key found"}
 	}
 	mac := hmac.New(sha1.New, []byte(secret.PrivateKey))
 	_, err := mac.Write(data)
 	if err != nil {
-		return nil, &httpsignatures.CryptoError{Message: "error creating signature", Err: err}
+		return nil, &httpsignatures.ErrCrypto{Message: "error creating signature", Err: err}
 	}
 	return mac.Sum(nil), nil
 }
@@ -44,7 +44,7 @@ func (a algHmacSha1) Verify(secret httpsignatures.Secret, data []byte, signature
 		return err
 	}
 	if !hmac.Equal(signature, expected) {
-		return &httpsignatures.CryptoError{Message: "wrong signature"}
+		return &httpsignatures.ErrCrypto{Message: "wrong signature"}
 	}
 	return nil
 }

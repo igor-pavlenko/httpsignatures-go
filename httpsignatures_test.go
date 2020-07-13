@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const testHSErrType = "*httpsignatures.Error"
+const testHSErrType = "*httpsignatures.ErrHS"
 
 func testGetRequest() *http.Request {
 	r, _ := http.NewRequest(
@@ -155,8 +155,8 @@ func TestVerify(t *testing.T) {
 				})(),
 			},
 			want:        false,
-			wantErrType: testParserErrType,
-			wantErrMsg:  "ParserError: found 'T' — unsupported symbol, expected '\"' or space symbol",
+			wantErrType: testErrParserType,
+			wantErrMsg:  "ErrParser: found 'T' — unsupported symbol, expected '\"' or space symbol",
 		},
 		{
 			name: "Required field not found",
@@ -168,8 +168,8 @@ func TestVerify(t *testing.T) {
 				})(),
 			},
 			want:        false,
-			wantErrType: testParserErrType,
-			wantErrMsg:  "ParserError: keyId is not set in header",
+			wantErrType: testErrParserType,
+			wantErrMsg:  "ErrParser: keyId is not set in header",
 		},
 		{
 			name: "KeyId not found in secrets",
@@ -183,7 +183,7 @@ func TestVerify(t *testing.T) {
 			},
 			want:        false,
 			wantErrType: testHSErrType,
-			wantErrMsg:  "keyID 'test3' not found: SecretError: secret not found",
+			wantErrMsg:  "keyID 'test3' not found: ErrSecret: secret not found",
 		},
 		{
 			name: "Algorithm does not match",
@@ -225,11 +225,11 @@ func TestVerify(t *testing.T) {
 				})(),
 			},
 			want:        false,
-			wantErrType: testDigestErrType,
-			wantErrMsg:  "DigestError: unsupported digest hash algorithm 'XXX-256'",
+			wantErrType: testErrDigestType,
+			wantErrMsg:  "ErrDigest: unsupported digest hash algorithm 'XXX-256'",
 		},
 		{
-			name: "Error building signature string",
+			name: "ErrHS building signature string",
 			args: args{
 				r: (func() *http.Request {
 					r := testGetRequest()
@@ -256,7 +256,7 @@ func TestVerify(t *testing.T) {
 			wantErrMsg:  "empty string for signature",
 		},
 		{
-			name: "Error decode signature from base64",
+			name: "ErrHS decode signature from base64",
 			args: args{
 				r: (func() *http.Request {
 					r := testGetRequest()
@@ -284,7 +284,7 @@ func TestVerify(t *testing.T) {
 			},
 			want:        false,
 			wantErrType: testHSErrType,
-			wantErrMsg:  "wrong signature: CryptoError: error verify signature: crypto/rsa: verification error",
+			wantErrMsg:  "wrong signature: ErrCrypto: error verify signature: crypto/rsa: verification error",
 		},
 	}
 	for _, tt := range tests {
@@ -321,7 +321,7 @@ func TestSign(t *testing.T) {
 			},
 			want:        false,
 			wantErrType: testHSErrType,
-			wantErrMsg:  "keyId 'NotFound' not found: SecretError: secret not found",
+			wantErrMsg:  "keyId 'NotFound' not found: ErrSecret: secret not found",
 		},
 		{
 			name: "Not supported algorithm for secret key",
@@ -342,8 +342,8 @@ func TestSign(t *testing.T) {
 				defaultHeaders: []string{"digest"},
 			},
 			want:        false,
-			wantErrType: testDigestErrType,
-			wantErrMsg:  "DigestError: error creating digest hash 'ERR': create hash error",
+			wantErrType: testErrDigestType,
+			wantErrMsg:  "ErrDigest: error creating digest hash 'ERR': create hash error",
 		},
 		{
 			name: "Build signature string error",
@@ -658,8 +658,8 @@ func TestHSVerifyDigest(t *testing.T) {
 				r:  testGetDigestRequestFunc(testBodyExample, "MD5=MQ=="),
 			},
 			want:        false,
-			wantErrType: "*httpsignatures.DigestError",
-			wantErrMsg:  "DigestError: wrong digest: CryptoError: wrong hash",
+			wantErrType: "*httpsignatures.ErrDigest",
+			wantErrMsg:  "ErrDigest: wrong digest: ErrCrypto: wrong hash",
 		},
 	}
 	for _, tt := range tests {
@@ -709,8 +709,8 @@ func TestHSCreateDigest(t *testing.T) {
 				r:         testGetDigestRequestFunc(testBodyExample, "MD5=Sd/dVLAcvNLSq16eXua5uQ=="),
 				digestErr: true,
 			},
-			wantErrType: "*httpsignatures.DigestError",
-			wantErrMsg:  "DigestError: error creating digest hash 'ERR': create hash error",
+			wantErrType: "*httpsignatures.ErrDigest",
+			wantErrMsg:  "ErrDigest: error creating digest hash 'ERR': create hash error",
 		},
 	}
 	for _, tt := range tests {

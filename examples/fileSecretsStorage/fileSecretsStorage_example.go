@@ -29,19 +29,19 @@ func (s FileSecretsStorage) Get(keyID string) (httpsignatures.Secret, error) {
 
 	validKeyID, err := regexp.Match(`[a-zA-Z0-9]+`, []byte(keyID))
 	if !validKeyID {
-		return httpsignatures.Secret{}, &httpsignatures.SecretError{Message: "wrong keyID format allowed: [a-zA-Z0-9]+"}
+		return httpsignatures.Secret{}, &httpsignatures.ErrSecret{Message: "wrong keyID format allowed: [a-zA-Z0-9]+"}
 	}
 
 	publicKeyFile := fmt.Sprintf("%s/%s.pub", s.dir, keyID)
 	publicKey, err := s.readFile(publicKeyFile)
 	if err != nil {
-		return httpsignatures.Secret{}, &httpsignatures.SecretError{Message: "public key file not found", Err: err}
+		return httpsignatures.Secret{}, &httpsignatures.ErrSecret{Message: "public key file not found", Err: err}
 	}
 
 	privateKeyFile := fmt.Sprintf("%s/%s.key", s.dir, keyID)
 	privateKey, err := s.readFile(privateKeyFile)
 	if err != nil {
-		return httpsignatures.Secret{}, &httpsignatures.SecretError{Message: "private key file not found", Err: err}
+		return httpsignatures.Secret{}, &httpsignatures.ErrSecret{Message: "private key file not found", Err: err}
 	}
 
 	fmt.Println(privateKey, publicKey)
@@ -57,11 +57,11 @@ func (s FileSecretsStorage) Get(keyID string) (httpsignatures.Secret, error) {
 // Get key from file
 func (s FileSecretsStorage) readFile(f string) (string, error) {
 	if !s.fileExists(f) {
-		return "", &httpsignatures.SecretError{Message: fmt.Sprintf("file '%s' not found", f)}
+		return "", &httpsignatures.ErrSecret{Message: fmt.Sprintf("file '%s' not found", f)}
 	}
 	key, err := ioutil.ReadFile(f)
 	if err != nil {
-		return "", &httpsignatures.SecretError{Message: fmt.Sprintf("read file error: '%s'", f), Err: err}
+		return "", &httpsignatures.ErrSecret{Message: fmt.Sprintf("read file error: '%s'", f), Err: err}
 	}
 
 	return string(key), nil

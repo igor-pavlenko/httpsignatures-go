@@ -20,18 +20,18 @@ func (a ED25519) Algorithm() string {
 func (a ED25519) Create(secret Secret, data []byte) ([]byte, error) {
 	block, _ := pem.Decode([]byte(secret.PrivateKey))
 	if block == nil {
-		return nil, &CryptoError{"no private key found", nil}
+		return nil, &ErrCrypto{"no private key found", nil}
 	}
 
 	var asn1PrivateKey ED25519PrivateKey
 	_, err := asn1.Unmarshal(block.Bytes, &asn1PrivateKey)
 	if err != nil {
-		return nil, &CryptoError{"error unmarshal private key", err}
+		return nil, &ErrCrypto{"error unmarshal private key", err}
 	}
 
 	privateKey := ed25519.NewKeyFromSeed(asn1PrivateKey.PrivateKey[2:])
 	if len(privateKey) != ed25519.PrivateKeySize {
-		return nil, &CryptoError{"invalid private key size", nil}
+		return nil, &ErrCrypto{"invalid private key size", nil}
 	}
 
 	return ed25519.Sign(privateKey, data), nil
@@ -41,23 +41,23 @@ func (a ED25519) Create(secret Secret, data []byte) ([]byte, error) {
 func (a ED25519) Verify(secret Secret, data []byte, signature []byte) error {
 	block, _ := pem.Decode([]byte(secret.PublicKey))
 	if block == nil {
-		return &CryptoError{"no public key found", nil}
+		return &ErrCrypto{"no public key found", nil}
 	}
 
 	var asn1PublicKey ED25519PublicKey
 	_, err := asn1.Unmarshal(block.Bytes, &asn1PublicKey)
 	if err != nil {
-		return &CryptoError{"error unmarshal public key", err}
+		return &ErrCrypto{"error unmarshal public key", err}
 	}
 
 	publicKey := ed25519.PublicKey(asn1PublicKey.PublicKey.Bytes)
 	if len(publicKey) != ed25519.PublicKeySize {
-		return &CryptoError{"invalid public key size", nil}
+		return &ErrCrypto{"invalid public key size", nil}
 	}
 
 	res := ed25519.Verify(publicKey, data, signature)
 	if !res {
-		return &CryptoError{"signature verification error", nil}
+		return &ErrCrypto{"signature verification error", nil}
 	}
 	return nil
 }

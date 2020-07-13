@@ -17,5 +17,5 @@ func (s SimpleSecretsStorage) Get(keyID string) (Secret, error) {
 	if secret, ok := s.storage[keyID]; ok {
 		return secret, nil
 	}
-	return Secret{}, &SecretError{"secret not found", nil}
+	return Secret{}, &ErrSecret{"secret not found", nil}
 }

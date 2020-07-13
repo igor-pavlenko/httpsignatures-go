@@ -48,21 +48,21 @@ type DigestHeader struct {
 	digest string
 }
 
-// ParserError errors during parsing
-type ParserError struct {
+// ErrParser errors during parsing
+type ErrParser struct {
 	Message string
 	Err     error
 }
 
-// Error error message
-func (e *ParserError) Error() string {
+// ErrHS error message
+func (e *ErrParser) Error() string {
 	if e == nil {
 		return ""
 	}
 	if e.Err != nil {
-		return fmt.Sprintf("ParserError: %s: %s", e.Message, e.Err.Error())
+		return fmt.Sprintf("ErrParser: %s: %s", e.Message, e.Err.Error())
 	}
-	return fmt.Sprintf("ParserError: %s", e.Message)
+	return fmt.Sprintf("ErrParser: %s", e.Message)
 }
 
 // Parser parser internal struct
@@ -83,23 +83,23 @@ func NewParser() *Parser {
 }
 
 // ParseSignatureHeader parse Signature header
-func (p *Parser) ParseSignatureHeader(header string) (Headers, *ParserError) {
+func (p *Parser) ParseSignatureHeader(header string) (Headers, *ErrParser) {
 	p.flag = "param"
 	return p.parseSignature(header)
 }
 
 // ParseDigestHeader parse Digest header
-func (p *Parser) ParseDigestHeader(header string) (DigestHeader, *ParserError) {
+func (p *Parser) ParseDigestHeader(header string) (DigestHeader, *ErrParser) {
 	p.flag = "algorithm"
 	return p.parseDigest(header)
 }
 
-func (p *Parser) parseSignature(header string) (Headers, *ParserError) {
+func (p *Parser) parseSignature(header string) (Headers, *ErrParser) {
 	if len(header) == 0 {
-		return Headers{}, &ParserError{"empty header", nil}
+		return Headers{}, &ErrParser{"empty header", nil}
 	}
 
-	var err *ParserError
+	var err *ErrParser
 	r := strings.NewReader(header)
 	b := make([]byte, 1)
 	for {
@@ -127,7 +127,7 @@ func (p *Parser) parseSignature(header string) (Headers, *ParserError) {
 		case "div":
 			err = p.parseDiv(cur)
 		default:
-			err = &ParserError{"unexpected parser stage", nil}
+			err = &ErrParser{"unexpected parser stage", nil}
 
 		}
 		if err != nil {
@@ -138,12 +138,12 @@ func (p *Parser) parseSignature(header string) (Headers, *ParserError) {
 	return p.headers, nil
 }
 
-func (p *Parser) parseDigest(header string) (DigestHeader, *ParserError) {
+func (p *Parser) parseDigest(header string) (DigestHeader, *ErrParser) {
 	if len(header) == 0 {
-		return DigestHeader{}, &ParserError{"empty digest header", nil}
+		return DigestHeader{}, &ErrParser{"empty digest header", nil}
 	}
 
-	var err *ParserError
+	var err *ErrParser
 	r := strings.NewReader(header)
 	b := make([]byte, 1)
 	for {
@@ -163,7 +163,7 @@ func (p *Parser) parseDigest(header string) (DigestHeader, *ParserError) {
 		case "stringRawValue":
 			err = p.parseStringRawValue(cur)
 		default:
-			err = &ParserError{"unexpected parser stage", nil}
+			err = &ErrParser{"unexpected parser stage", nil}
 
 		}
 		if err != nil {
@@ -174,38 +174,38 @@ func (p *Parser) parseDigest(header string) (DigestHeader, *ParserError) {
 	return p.digestHeader, nil
 }
 
-func (p *Parser) handleSignatureEOF() *ParserError {
-	var err *ParserError
+func (p *Parser) handleSignatureEOF() *ErrParser {
+	var err *ErrParser
 	switch p.flag {
 	case "param":
 		if len(p.key) == 0 {
-			err = &ParserError{"unexpected end of header, expected parameter", nil}
+			err = &ErrParser{"unexpected end of header, expected parameter", nil}
 		} else {
-			err = &ParserError{"unexpected end of header, expected '=' symbol and field value", nil}
+			err = &ErrParser{"unexpected end of header, expected '=' symbol and field value", nil}
 		}
 	case "equal":
-		err = &ParserError{"unexpected end of header, expected field value", nil}
+		err = &ErrParser{"unexpected end of header, expected field value", nil}
 	case "quote":
-		err = &ParserError{"unexpected end of header, expected '\"' symbol and field value", nil}
+		err = &ErrParser{"unexpected end of header, expected '\"' symbol and field value", nil}
 	case "stringValue":
-		err = &ParserError{"unexpected end of header, expected '\"' symbol", nil}
+		err = &ErrParser{"unexpected end of header, expected '\"' symbol", nil}
 	case "intValue":
 		err = p.setKeyValue()
 	}
 	return err
 }
 
-func (p *Parser) handleDigestEOF() *ParserError {
-	var err *ParserError
+func (p *Parser) handleDigestEOF() *ErrParser {
+	var err *ErrParser
 	if p.flag == "algorithm" {
-		err = &ParserError{"unexpected end of header, expected digest value", nil}
+		err = &ErrParser{"unexpected end of header, expected digest value", nil}
 	} else if p.flag == "stringRawValue" {
 		err = p.setDigest()
 	}
 	return err
 }
 
-func (p *Parser) parseKey(cur byte) *ParserError {
+func (p *Parser) parseKey(cur byte) *ErrParser {
 	if (cur >= fromA && cur <= toZ) || (cur >= froma && cur <= toz) {
 		p.key = append(p.key, cur)
 	} else if cur == equal {
@@ -218,7 +218,7 @@ func (p *Parser) parseKey(cur byte) *ParserError {
 	} else if cur == space && len(p.key) > 0 {
 		p.flag = "equal"
 	} else if cur != space {
-		return &ParserError{
+		return &ErrParser{
 			fmt.Sprintf("found '%s' — unsupported symbol in key", string(cur)),
 			nil,
 		}
@@ -226,7 +226,7 @@ func (p *Parser) parseKey(cur byte) *ParserError {
 	return nil
 }
 
-func (p *Parser) parseAlgorithm(cur byte) *ParserError {
+func (p *Parser) parseAlgorithm(cur byte) *ErrParser {
 	if (cur >= fromA && cur <= toZ) ||
 		(cur >= froma && cur <= toz) ||
 		(cur >= from0 && cur <= to9) || cur == min {
@@ -234,7 +234,7 @@ func (p *Parser) parseAlgorithm(cur byte) *ParserError {
 	} else if cur == equal {
 		p.flag = "stringRawValue"
 	} else {
-		return &ParserError{
+		return &ErrParser{
 			fmt.Sprintf("found '%s' — unsupported symbol in algorithm", string(cur)),
 			nil,
 		}
@@ -242,7 +242,7 @@ func (p *Parser) parseAlgorithm(cur byte) *ParserError {
 	return nil
 }
 
-func (p *Parser) parseEqual(cur byte) *ParserError {
+func (p *Parser) parseEqual(cur byte) *ErrParser {
 	if cur == equal {
 		t := p.getValueType()
 		if t == "string" {
@@ -253,7 +253,7 @@ func (p *Parser) parseEqual(cur byte) *ParserError {
 	} else if cur == space {
 		return nil
 	} else {
-		return &ParserError{
+		return &ErrParser{
 			fmt.Sprintf("found '%s' — unsupported symbol, expected '=' or space symbol", string(cur)),
 			nil,
 		}
@@ -261,13 +261,13 @@ func (p *Parser) parseEqual(cur byte) *ParserError {
 	return nil
 }
 
-func (p *Parser) parseQuote(cur byte) *ParserError {
+func (p *Parser) parseQuote(cur byte) *ErrParser {
 	if cur == quote {
 		p.flag = "stringValue"
 	} else if cur == space {
 		return nil
 	} else {
-		return &ParserError{
+		return &ErrParser{
 			fmt.Sprintf("found '%s' — unsupported symbol, expected '\"' or space symbol", string(cur)),
 			nil,
 		}
@@ -275,7 +275,7 @@ func (p *Parser) parseQuote(cur byte) *ParserError {
 	return nil
 }
 
-func (p *Parser) parseStringValue(cur byte) *ParserError {
+func (p *Parser) parseStringValue(cur byte) *ErrParser {
 	if cur != quote {
 		p.value = append(p.value, cur)
 	} else if cur == quote {
@@ -287,7 +287,7 @@ func (p *Parser) parseStringValue(cur byte) *ParserError {
 	return nil
 }
 
-func (p *Parser) parseIntValue(cur byte) *ParserError {
+func (p *Parser) parseIntValue(cur byte) *ErrParser {
 	if cur >= from0 && cur <= to9 {
 		p.value = append(p.value, cur)
 	} else if cur == space {
@@ -307,18 +307,18 @@ func (p *Parser) parseIntValue(cur byte) *ParserError {
 	return nil
 }
 
-func (p *Parser) parseStringRawValue(cur byte) *ParserError {
+func (p *Parser) parseStringRawValue(cur byte) *ErrParser {
 	p.value = append(p.value, cur)
 	return nil
 }
 
-func (p *Parser) parseDiv(cur byte) *ParserError {
+func (p *Parser) parseDiv(cur byte) *ErrParser {
 	if cur == div {
 		p.flag = "param"
 	} else if cur == space {
 		return nil
 	} else {
-		return &ParserError{
+		return &ErrParser{
 			fmt.Sprintf("found '%s' — unsupported symbol, expected ',' or space symbol", string(cur)),
 			nil,
 		}
@@ -334,11 +334,11 @@ func (p *Parser) getValueType() string {
 	return "string"
 }
 
-func (p *Parser) setKeyValue() *ParserError {
+func (p *Parser) setKeyValue() *ErrParser {
 	k := string(p.key)
 
 	if len(p.value) == 0 {
-		return &ParserError{
+		return &ErrParser{
 			fmt.Sprintf("empty value for key '%s'", k),
 			nil,
 		}
@@ -347,7 +347,7 @@ func (p *Parser) setKeyValue() *ParserError {
 	if p.params[k] {
 		// 2.2 If any of the parameters listed above are erroneously duplicated in the associated header field,
 		// then the the signature MUST NOT be processed.
-		return &ParserError{
+		return &ErrParser{
 			fmt.Sprintf("duplicate param '%s'", k),
 			nil,
 		}
@@ -365,12 +365,12 @@ func (p *Parser) setKeyValue() *ParserError {
 	} else if k == "created" {
 		var err error
 		if p.headers.created, err = p.intToTime(p.value); err != nil {
-			return &ParserError{"wrong 'created' param value", err}
+			return &ErrParser{"wrong 'created' param value", err}
 		}
 	} else if k == "expires" {
 		var err error
 		if p.headers.expires, err = p.intToTime(p.value); err != nil {
-			return &ParserError{"wrong 'expires' param value", err}
+			return &ErrParser{"wrong 'expires' param value", err}
 		}
 	}
 
@@ -391,9 +391,9 @@ func (p *Parser) intToTime(v []byte) (time.Time, error) {
 	return time.Unix(sec, 0), nil
 }
 
-func (p *Parser) setDigest() *ParserError {
+func (p *Parser) setDigest() *ErrParser {
 	if len(p.value) == 0 {
-		return &ParserError{
+		return &ErrParser{
 			"empty digest value",
 			nil,
 		}
@@ -409,16 +409,16 @@ func (p *Parser) setDigest() *ParserError {
 }
 
 // VerifySignatureFields verify required fields
-func (p *Parser) VerifySignatureFields() *ParserError {
+func (p *Parser) VerifySignatureFields() *ErrParser {
 	if p.headers.keyID == "" {
-		return &ParserError{
+		return &ErrParser{
 			"keyId is not set in header",
 			nil,
 		}
 	}
 
 	if p.headers.signature == "" {
-		return &ParserError{
+		return &ErrParser{
 			"signature is not set in header",
 			nil,
 		}

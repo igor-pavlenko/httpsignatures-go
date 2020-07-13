@@ -30,7 +30,7 @@ func (a algSha1) Create(data []byte) ([]byte, error) {
 	h := sha1.New()
 	_, err := h.Write(data)
 	if err != nil {
-		return nil, &httpsignatures.CryptoError{Message: "error creating hash", Err: err}
+		return nil, &httpsignatures.ErrCrypto{Message: "error creating hash", Err: err}
 	}
 	return h.Sum(nil), nil
 }
@@ -42,7 +42,7 @@ func (a algSha1) Verify(data []byte, digest []byte) error {
 		return err
 	}
 	if subtle.ConstantTimeCompare(digest, expected) != 1 {
-		return &httpsignatures.CryptoError{Message: "wrong hash"}
+		return &httpsignatures.ErrCrypto{Message: "wrong hash"}
 	}
 	return nil
 }

@@ -2,21 +2,21 @@ package httpsignatures
 
 import "fmt"
 
-// SecretError errors during retrieving secret
-type SecretError struct {
+// ErrSecret errors during retrieving secret
+type ErrSecret struct {
 	Message string
 	Err     error
 }
 
-// Error error message
-func (e *SecretError) Error() string {
+// ErrHS error message
+func (e *ErrSecret) Error() string {
 	if e == nil {
 		return ""
 	}
 	if e.Err != nil {
-		return fmt.Sprintf("SecretError: %s: %s", e.Message, e.Err.Error())
+		return fmt.Sprintf("ErrSecret: %s: %s", e.Message, e.Err.Error())
 	}
-	return fmt.Sprintf("SecretError: %s", e.Message)
+	return fmt.Sprintf("ErrSecret: %s", e.Message)
 }
 
 // Secrets interface to retrieve secrets from storage (local, DB, file etc)

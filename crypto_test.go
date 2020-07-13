@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-const testCryptoErrType = "*httpsignatures.CryptoError"
+const testErrCryptoType = "*httpsignatures.ErrCrypto"
 const testHashData = "hello world"
 
 type argsVerify struct {
@@ -73,7 +73,7 @@ func TestHashAlgorithmCreate(t *testing.T) {
 				data: []byte(testHashData),
 			},
 			want:        "5eb63bbbe01eeed093cb22bb8f5acdc3",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -83,7 +83,7 @@ func TestHashAlgorithmCreate(t *testing.T) {
 				data: []byte(testHashData),
 			},
 			want:        "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -94,7 +94,7 @@ func TestHashAlgorithmCreate(t *testing.T) {
 			},
 			want: "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd8" +
 				"30e81f605dcf7dc5542e93ae9cd76f",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 	}
@@ -138,8 +138,8 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(testHashData),
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: wrong hash",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: wrong hash",
 		},
 		{
 			name: "Sha256 verify ok",
@@ -149,7 +149,7 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(testHashData),
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -160,8 +160,8 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(testHashData),
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: wrong hash",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: wrong hash",
 		},
 		{
 			name: "Sha512 verify ok",
@@ -172,7 +172,7 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data: []byte(testHashData),
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -183,8 +183,8 @@ func TestHashAlgorithmVerify(t *testing.T) {
 				data:   []byte(testHashData),
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: wrong hash",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: wrong hash",
 		},
 	}
 
@@ -283,7 +283,7 @@ func TestSignatureHashHmacAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "7lksEgztUSEk34sJ8vGQpE0i+UK+ZexCQ0L8HpHBBJY=",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -294,8 +294,8 @@ func TestSignatureHashHmacAlgorithmCreate(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no private key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no private key found",
 		},
 		{
 			name: "HMAC-SHA512 create ok",
@@ -308,7 +308,7 @@ func TestSignatureHashHmacAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "xhrfZlhd8heV7O4w1nPbNRYdWSc2Qg8RuruZ5jDDHbVzSgd4NQOePJWN5xIKz74U/HhlLe138G8VLcH5atTZTg==",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -319,8 +319,8 @@ func TestSignatureHashHmacAlgorithmCreate(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no private key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no private key found",
 		},
 	}
 
@@ -364,7 +364,7 @@ func TestSignatureHashRsaAlgorithmCreate(t *testing.T) {
 			},
 			want: "qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdK" +
 				"FYRqzic+efkb3nndiv/x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0=",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -375,8 +375,8 @@ func TestSignatureHashRsaAlgorithmCreate(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no private key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no private key found",
 		},
 		{
 			name: "RSA-SHA256 unsupported key type",
@@ -389,8 +389,8 @@ func TestSignatureHashRsaAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported private key type SSH PRIVATE KEY",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unsupported private key type SSH PRIVATE KEY",
 		},
 		{
 			name: "RSA-SHA256 error ParsePKCS1PrivateKey",
@@ -404,8 +404,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported private key type RSA PRIVATE KEY",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unsupported private key type RSA PRIVATE KEY",
 		},
 		{
 			name: "RSA-SHA512 create ok",
@@ -425,7 +425,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			},
 			want: "iz8UWbpy9oK5R2sdD5fIj8VphjkGTeMZ2YKGOiW77yBYS8TB5R/T3Knet4DlnvjAqZrWBDbN75d8/Ttf/bIMoZO0NFr60SBngB" +
 				"zya6xnVIQ+0zoidBXpNjlttV2BDc44mrLvemk8Ar5NIiySNvKvKl7UNJxgKfT5UtGKDdry8qU=",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -441,8 +441,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported algorithm type RSA-DUMMY",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unsupported algorithm type RSA-DUMMY",
 		},
 		{
 			name: "RSA-SHA256 create ok",
@@ -462,7 +462,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 			},
 			want: "qdx+H7PHHDZgy4y/Ahn9Tny9V3GP6YgBPyUXMmoxWtLbHpUnXS2mg2+SbrQDMCJypxBLSPQR2aAjn7ndmw2iicw3HMbe8VfEdK" +
 				"FYRqzic+efkb3nndiv/x1xSHDJWeSWkx3ButlYSuBskLu6kd9Fswtemr3lgdDEmn04swr2Os0=",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 	}
@@ -506,7 +506,7 @@ func TestSignatureHashRsaSsaPssAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -526,7 +526,7 @@ func TestSignatureHashRsaSsaPssAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 	}
@@ -582,7 +582,7 @@ func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -593,8 +593,8 @@ func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no private key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no private key found",
 		},
 		{
 			name: "ECDSA-SHA256 unsupported key type",
@@ -607,8 +607,8 @@ func TestSignatureHashEcdsaAlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported private key type RSA PRIVATE KEY",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unsupported private key type RSA PRIVATE KEY",
 		},
 		{
 			name: "ECDSA-SHA256 error ParseECPrivateKey",
@@ -622,8 +622,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported private key type EC PRIVATE KEY",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unsupported private key type EC PRIVATE KEY",
 		},
 		{
 			name: "ECDSA-DUMMY unsupported algorithm type",
@@ -638,8 +638,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported algorithm type ECDSA-DUMMY",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unsupported algorithm type ECDSA-DUMMY",
 		},
 		{
 			name: "ECDSA-SHA256 unknown private key type",
@@ -654,8 +654,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unknown private key type",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unknown private key type",
 		},
 		{
 			name: "ECDSA-SHA512 create ok",
@@ -674,7 +674,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 	}
@@ -725,7 +725,7 @@ func TestSignatureHashED25519AlgorithmCreate(t *testing.T) {
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -736,8 +736,8 @@ func TestSignatureHashED25519AlgorithmCreate(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no private key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no private key found",
 		},
 		{
 			name: "ED25519 error unmarshal private key",
@@ -751,8 +751,8 @@ OMke+7A8ArZBjbrDyYWtYN8qxGaDmrkziIl1ogfA2P597XhmBSCXqN6EFouVx79mfggiZGvhl0Z4DxFn
 				},
 			},
 			want:        "",
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error unmarshal private key: asn1: structure error: length too large",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error unmarshal private key: asn1: structure error: length too large",
 		},
 	}
 
@@ -793,7 +793,7 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -808,8 +808,8 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: wrong signature",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: wrong signature",
 		},
 		{
 			name: "HMAC-SHA256 no private key found",
@@ -820,8 +820,8 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no private key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no private key found",
 		},
 		{
 			name: "HMAC-SHA512 verify ok",
@@ -835,7 +835,7 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -850,8 +850,8 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: wrong signature",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: wrong signature",
 		},
 		{
 			name: "HMAC-SHA512 no private key found",
@@ -862,8 +862,8 @@ func TestSignatureHashHmacAlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no private key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no private key found",
 		},
 	}
 
@@ -902,7 +902,7 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -919,8 +919,8 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error verify signature: crypto/rsa: verification error",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error verify signature: crypto/rsa: verification error",
 		},
 		{
 			name: "RSA-SHA256 no public key found",
@@ -931,8 +931,8 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no public key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no public key found",
 		},
 		{
 			name: "RSA-SHA256 unsupported key type",
@@ -945,8 +945,8 @@ func TestSignatureHashRsaAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
 		},
 		{
 			name: "RSA-SHA256 error ParsePKIXPublicKey",
@@ -960,8 +960,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
 		},
 		{
 			name: "RSA-SHA256 unknown type of public key",
@@ -976,8 +976,8 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unknown type of public key",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unknown type of public key",
 		},
 		{
 			name: "RSA-SHA512 verify ok",
@@ -998,7 +998,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -1015,8 +1015,8 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported verify algorithm type RSA-DUMMY",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unsupported verify algorithm type RSA-DUMMY",
 		},
 	}
 
@@ -1055,7 +1055,7 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -1072,8 +1072,8 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error verify signature: crypto/rsa: verification error",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error verify signature: crypto/rsa: verification error",
 		},
 		{
 			name: "RSASSA-PSS-SHA256 no public key found",
@@ -1084,8 +1084,8 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no public key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no public key found",
 		},
 		{
 			name: "RSASSA-PSS-SHA256 unsupported key type",
@@ -1098,8 +1098,8 @@ func TestSignatureHashRsaSsaPssAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
 		},
 		{
 			name: "RSASSA-PSS-SHA256 error ParsePKIXPublicKey",
@@ -1113,8 +1113,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
 		},
 		{
 			name: "RSASSA-PSS-SHA256 unknown type of public key",
@@ -1129,8 +1129,8 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unknown type of public key",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unknown type of public key",
 		},
 		{
 			name: "RSASSA-PSS-SHA512 verify ok",
@@ -1153,7 +1153,7 @@ yEh6Szz2in47Tv5n52m9dLYyPCbqZkOB5nTSqtscpkQD/HpykCggvx09iQ==
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 	}
@@ -1196,7 +1196,7 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -1214,8 +1214,8 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: signature verification error",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: signature verification error",
 		},
 		{
 			name: "ECDSA-SHA256 no public key found",
@@ -1226,8 +1226,8 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no public key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no public key found",
 		},
 		{
 			name: "ECDSA-SHA256 unsupported key type",
@@ -1240,8 +1240,8 @@ func TestSignatureHashEcdsaAlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error ParsePKIXPublicKey: asn1: syntax error: sequence truncated",
 		},
 		{
 			name: "ECDSA-SHA256 error ParsePKIXPublicKey",
@@ -1255,8 +1255,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error ParsePKIXPublicKey: asn1: syntax error: data truncated",
 		},
 		{
 			name: "ECDSA-SHA256 error wrong public key",
@@ -1271,8 +1271,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unknown type of public key",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unknown type of public key",
 		},
 		{
 			name: "ECDSA-SHA256 error Unmarshal signature",
@@ -1288,8 +1288,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg: "CryptoError: error Unmarshal signature: asn1: structure error: tags don't match (16 vs " +
+			wantErrType: testErrCryptoType,
+			wantErrMsg: "ErrCrypto: error Unmarshal signature: asn1: structure error: tags don't match (16 vs " +
 				"{class:0 tag:17 length:50 isCompound:true}) {optional:false explicit:false application:false " +
 				"private:false defaultValue:<nil> tag:<nil> stringType:0 timeType:0 set:false omitEmpty:false}" +
 				" ECDSASignature @2",
@@ -1308,8 +1308,8 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: unsupported verify algorithm type ECDSA-DUMMY",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: unsupported verify algorithm type ECDSA-DUMMY",
 		},
 		{
 			name: "ECDSA-SHA512 verify ok",
@@ -1330,7 +1330,7 @@ MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 	}
@@ -1372,7 +1372,7 @@ func TestSignatureHashED25519AlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        true,
-			wantErrType: testCryptoErrType,
+			wantErrType: testErrCryptoType,
 			wantErrMsg:  "",
 		},
 		{
@@ -1389,8 +1389,8 @@ func TestSignatureHashED25519AlgorithmVerify(t *testing.T) {
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: signature verification error",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: signature verification error",
 		},
 		{
 			name: "ED25519 no public key found",
@@ -1401,8 +1401,8 @@ func TestSignatureHashED25519AlgorithmVerify(t *testing.T) {
 				secret: Secret{},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: no public key found",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: no public key found",
 		},
 		{
 			name: "ED25519 error unmarshal public key",
@@ -1416,8 +1416,8 @@ fe14ZgUgl6jehBaLlce/Zn4IImRr4ZdGeA8RZzaJRNc=
 				},
 			},
 			want:        false,
-			wantErrType: testCryptoErrType,
-			wantErrMsg:  "CryptoError: error unmarshal public key: asn1: structure error: length too large",
+			wantErrType: testErrCryptoType,
+			wantErrMsg:  "ErrCrypto: error unmarshal public key: asn1: structure error: length too large",
 		},
 	}
 
