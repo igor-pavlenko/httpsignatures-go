@@ -5,7 +5,7 @@ type SimpleSecretsStorage struct {
 	storage map[string]Secret
 }
 
-// NewSimpleSecretsStorage create new digest
+// NewSimpleSecretsStorage create new storage
 func NewSimpleSecretsStorage(storage map[string]Secret) Secrets {
 	s := new(SimpleSecretsStorage)
 	s.storage = storage
