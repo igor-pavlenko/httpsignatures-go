@@ -3,21 +3,24 @@ package httpsignatures
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
+	"github.com/aws/aws-sdk-go/service/secretsmanager/secretsmanageriface"
 	"github.com/muesli/cache2go"
+	"time"
 )
 
 // GetSecretValue function construct SecretId in aws secrets manager based on keyType (PrivateKey/PublicKey) & keyID
-type GetSecretID = func(keyType string, keyID string, requiredPrivateKeys map[string]bool) (*secretsmanager.GetSecretValueInput, error)
+type GetSecretID = func(env string, keyType string, keyID string, requiredPrivateKeys map[string]bool) (string, error)
 
-// GetSecretValue function convert *secretsmanager.GetSecretValueOutput to Secret
-type GetSecretValue = func(sv *secretsmanager.GetSecretValueOutput, secret *Secret, keyType string) error
+// GetSecretValue function convert value from secrets manager to Secret
+type GetSecretValue = func(keyType string, value []byte, secret *Secret) error
 
 // AwsSecretsManagerStorage AWS Secrets Manager storage
 type AwsSecretsManagerStorage struct {
+	env                 string
 	storage             *cache2go.CacheTable
-	cfg                 *aws.Config
+	defaultExpiresSec   uint32
+	sm                  secretsmanageriface.SecretsManagerAPI
 	getSecretID         GetSecretID
 	getSecretValue      GetSecretValue
 	requiredPrivateKeys map[string]bool
@@ -26,14 +29,17 @@ type AwsSecretsManagerStorage struct {
 const privateKey = "PrivateKey"
 const publicKey = "PublicKey"
 const algorithm = "Algorithm"
+const defaultCacheExpiresSec = 86400 // 24 Hours
 
-var defGetSecretID GetSecretID = func(keyType string, keyID string, requiredPrivateKeys map[string]bool) (*secretsmanager.GetSecretValueInput, error) {
+// Default key format: /<env>/<keyID>/<keyType>
+// Example: /prod/merchant/PrivateKey | /prod/merchant/publicKey
+var defGetSecretID GetSecretID = func(env string, keyID string, keyType string, requiredPrivateKeys map[string]bool) (string, error) {
 	var smKeyID string
 	switch keyType {
 	case publicKey:
-		smKeyID = fmt.Sprintf("/%s/%s", keyType, keyID)
+		smKeyID = fmt.Sprintf("/%s/%s/%s", env, keyID, keyType)
 	case algorithm:
-		smKeyID = fmt.Sprintf("/%s/%s", keyType, keyID)
+		smKeyID = fmt.Sprintf("/%s/%s/%s", env, keyID, keyType)
 	case privateKey:
 		// Skip private key in case:
 		// - key not in the list (requiredPrivateKeys)
@@ -41,48 +47,74 @@ var defGetSecretID GetSecretID = func(keyType string, keyID string, requiredPriv
 		// In case of empty requiredPrivateKeys list — privateKey is always required
 		req, ok := requiredPrivateKeys[keyID]
 		if len(requiredPrivateKeys) > 0 && (!ok || !req) {
-			return nil, nil
+			return "", nil
 		}
-		smKeyID = fmt.Sprintf("/%s/%s", keyType, keyID)
+		smKeyID = fmt.Sprintf("/%s/%s/%s", env, keyID, keyType)
 	default:
-		return nil, &ErrSecret{
+		return "", &ErrSecret{
 			fmt.Sprintf("unknown keyType '%s' for aws secrets manager", keyType),
 			nil,
 		}
 	}
-	return &secretsmanager.GetSecretValueInput{
-		SecretId: aws.String(smKeyID),
-	}, nil
+	return smKeyID, nil
 }
 
-var defGetSecretValue GetSecretValue = func(sv *secretsmanager.GetSecretValueOutput, secret *Secret, keyType string) error {
+var defGetSecretValue GetSecretValue = func(keyType string, value []byte, secret *Secret) error {
+	switch keyType {
+	case publicKey:
+		secret.PublicKey = string(value)
+	case algorithm:
+		secret.Algorithm = string(value)
+	case privateKey:
+		secret.PrivateKey = string(value)
+	default:
+		return &ErrSecret{
+			fmt.Sprintf("unknown keyType '%s' for aws secrets manager", keyType),
+			nil,
+		}
+	}
 	return nil
 }
 
 // NewAwsSecretsManagerStorage create storage
-func NewAwsSecretsManagerStorage(
-	cfg *aws.Config,
-	getSecretID GetSecretID,
-	getSecretValue GetSecretValue,
-	requiredPrivateKeys map[string]bool) Secrets {
+func NewAwsSecretsManagerStorage(env string, sm secretsmanageriface.SecretsManagerAPI) *AwsSecretsManagerStorage {
 	s := new(AwsSecretsManagerStorage)
+	s.env = env
 	s.storage = cache2go.Cache("AwsSecretsManagerStorage")
-	s.cfg = cfg
-	if getSecretID == nil {
-		s.getSecretID = defGetSecretID
-	} else {
-		s.getSecretID = getSecretID
-	}
-	if getSecretValue == nil {
-		s.getSecretValue = defGetSecretValue
-	} else {
-		s.getSecretValue = getSecretValue
-	}
-	if requiredPrivateKeys == nil {
-		s.requiredPrivateKeys = make(map[string]bool)
-	}
+	s.defaultExpiresSec = defaultCacheExpiresSec
+	s.sm = sm
+	s.getSecretID = defGetSecretID
+	s.getSecretValue = defGetSecretValue
+	s.requiredPrivateKeys = make(map[string]bool)
 
 	return s
+}
+
+// SetCacheExpiresSeconds set default cache expires seconds.
+func (s *AwsSecretsManagerStorage) SetCacheExpiresSeconds(e uint32) {
+	s.defaultExpiresSec = e
+}
+
+// SetGetSecretID set custom function to build secret ID in AWS SecretsManager.
+func (s *AwsSecretsManagerStorage) SetGetSecretID(f GetSecretID) {
+	if f != nil {
+		s.getSecretID = f
+	}
+}
+
+// SetGetSecretValue set custom function to extract value from secret.
+func (s *AwsSecretsManagerStorage) SetGetSecretValue(f GetSecretValue) {
+	if f != nil {
+		s.getSecretValue = f
+	}
+}
+
+// SetRequiredPrivateKeys set keys with required PrivateKey secrets.
+func (s *AwsSecretsManagerStorage) SetRequiredPrivateKeys(l map[string]bool) {
+	if l == nil {
+		l = make(map[string]bool)
+	}
+	s.requiredPrivateKeys = l
 }
 
 // Get get secret from cache by KeyID or from AWS Secrets Manager for first time
@@ -91,58 +123,69 @@ func (s AwsSecretsManagerStorage) Get(keyID string) (Secret, error) {
 	if err == nil {
 		return secret.Data().(Secret), nil
 	}
-	_, _ = s.getSecret("")
+	secretVal, err := s.getSecret(keyID)
+	if err != nil {
+		return Secret{}, &ErrSecret{"secret not found", err}
+	}
+	s.storage.Add(keyID, 5*time.Second, *secretVal)
 
-	return Secret{}, &ErrSecret{"secret not found", nil}
+	return *secretVal, nil
 }
 
+// Use cases:
+// 1) Service used to validate incoming requests from many other services
+// 2) Service used to sign outgoing requests (signed by itself)
+// 3) Service used to sign outgoing requests on behalf of other services
 func (s AwsSecretsManagerStorage) getSecret(keyID string) (*Secret, error) {
-	sess, err := session.NewSession(s.cfg)
-	if err != nil {
-		return nil, &ErrSecret{"error aws new session", err}
-	}
-
-	sm := secretsmanager.New(sess)
-
 	secret := &Secret{}
-
-	// Use cases:
-	// 1) Service used to validate incoming requests from many other services
-	// 2) Service used to sign outgoing requests (signed by itself)
-	// 3) Service used to sign outgoing requests on behalf of other services
 	keys := []string{publicKey, algorithm, privateKey}
-	outputs := make(map[string]*secretsmanager.GetSecretValueOutput)
-	for _, k := range keys {
-		input, err := s.getSecretID(k, keyID, s.requiredPrivateKeys)
-		// Skip secret
-		if input == nil {
-			continue
-		}
+	outputs := make(map[string][]byte)
+	for _, keyType := range keys {
+		smKeyID, err := s.getSecretID(s.env, keyID, keyType, s.requiredPrivateKeys)
 		if err != nil {
 			return nil, &ErrSecret{
-				fmt.Sprintf("error get secretID for keyType '%s', keyID '%s'", k, keyID),
+				fmt.Sprintf("error get secretID for keyType '%s', keyID '%s'", keyType, keyID),
 				err,
 			}
 		}
-		output, ok := outputs[*input.SecretId]
+		// Skip secret
+		if smKeyID == "" {
+			continue
+		}
+		secret.KeyID = keyID
+		output, ok := outputs[smKeyID]
 		if !ok {
-			output, err = sm.GetSecretValue(input)
+			output, err = s.getSMSecret(smKeyID)
 			if err != nil {
 				return nil, &ErrSecret{
-					fmt.Sprintf("error get secret value '%s'", *input.SecretId),
+					fmt.Sprintf("error get secret value '%s'", secret.KeyID),
 					err,
 				}
 			}
-			outputs[*input.SecretId] = output
+			outputs[smKeyID] = output
 		}
-		err = s.getSecretValue(output, secret, k)
+		err = s.getSecretValue(keyType, output, secret)
 		if err != nil {
 			return nil, &ErrSecret{
-				fmt.Sprintf("error extract secret value '%s'", *input.SecretId),
+				fmt.Sprintf("error extract secret value '%s'", secret.KeyID),
 				err,
 			}
 		}
 	}
 
 	return secret, nil
+}
+
+func (s AwsSecretsManagerStorage) getSMSecret(smKeyID string) ([]byte, error) {
+	input := &secretsmanager.GetSecretValueInput{
+		SecretId: aws.String(smKeyID),
+	}
+	smOutput, err := s.sm.GetSecretValue(input)
+	if err != nil {
+		return nil, &ErrSecret{
+			fmt.Sprintf("error get secret value '%s'", smKeyID),
+			err,
+		}
+	}
+	return smOutput.SecretBinary, nil
 }
