@@ -4,7 +4,7 @@ import (
 	"crypto/sha1"
 	"crypto/subtle"
 	"fmt"
-	"github.com/igor-pavlenko/httpsignatures.go"
+	"github.com/igor-pavlenko/httpsignatures-go"
 )
 
 // To create new digest algorithm, implement httpsignatures.DigestHashAlgorithm interface

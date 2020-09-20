@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha1"
-	"github.com/igor-pavlenko/httpsignatures.go"
+	"github.com/igor-pavlenko/httpsignatures-go"
 )
 
 // To create your own signature hash algorithm, implement httpsignatures.SignatureHashAlgorithm interface
