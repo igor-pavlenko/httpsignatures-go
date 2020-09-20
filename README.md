@@ -1,8 +1,8 @@
-# Httpsignatures.go
+# Httpsignatures-go
 
-[![Linter & Tests](https://github.com/igor-pavlenko/httpsignatures.go/workflows/linter%20&%20tests/badge.svg?branch=master)](https://github.com/igor-pavlenko/httpsignatures.go/actions)
+[![Linter & Tests](https://github.com/igor-pavlenko/httpsignatures-go/workflows/linter%20&%20tests/badge.svg?branch=master)](https://github.com/igor-pavlenko/httpsignatures-go/actions)
 [![Codecov](https://codecov.io/gh/igor-pavlenko/httpsignatures.go/branch/master/graph/badge.svg)](https://codecov.io/gh/igor-pavlenko/httpsignatures.go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/igor-pavlenko/httpsignatures.go)](https://goreportcard.com/report/github.com/igor-pavlenko/httpsignatures.go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/igor-pavlenko/httpsignatures-go)](https://goreportcard.com/report/github.com/igor-pavlenko/httpsignatures-go)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=igor-pavlenko_httpsignatures.go&metric=alert_status)](https://sonarcloud.io/dashboard?id=igor-pavlenko_httpsignatures.go)
 
 This module is created to provide a simple solution to sign HTTP messages according to the document:
@@ -28,11 +28,11 @@ Final release                                 | v1.0.0
 ## Installation
 To install the module:
 
-`go get github.com/igor-pavlenko/httpsignatures.go`
+`go get github.com/igor-pavlenko/httpsignatures-go`
 
 To install a specific version, use:
 
-`go get github.com/igor-pavlenko/httpsignatures.go@v0.0.3`
+`go get github.com/igor-pavlenko/httpsignatures-go@v0.0.14`
 
 Don't forget: `export GO111MODULE=on`
 
@@ -42,7 +42,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/igor-pavlenko/httpsignatures.go"
+	"github.com/igor-pavlenko/httpsignatures-go"
 	"net/http"
 	"strings"
 )
@@ -85,7 +85,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/igor-pavlenko/httpsignatures.go"
+	"github.com/igor-pavlenko/httpsignatures-go"
 	"net/http"
 	"strings"
 )
@@ -131,7 +131,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/igor-pavlenko/httpsignatures.go"
+	"github.com/igor-pavlenko/httpsignatures-go"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -231,7 +231,7 @@ import (
 	"crypto/sha1"
 	"crypto/subtle"
 	"fmt"
-	"github.com/igor-pavlenko/httpsignatures.go"
+	"github.com/igor-pavlenko/httpsignatures-go"
 )
 
 // To create new digest algorithm, implement httpsignatures.DigestHashAlgorithm interface
@@ -309,7 +309,7 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha1"
-	"github.com/igor-pavlenko/httpsignatures.go"
+	"github.com/igor-pavlenko/httpsignatures-go"
 )
 
 // To create your own signature hash algorithm, implement httpsignatures.SignatureHashAlgorithm interface
@@ -401,8 +401,8 @@ hs.SetDefaultSignatureHeaders([]string{"(request-target)", "(created)", "(expire
 * SHA512
 
 ## Examples
-Look at [examples](https://github.com/igor-pavlenko/httpsignatures.go/tree/master/examples) & tests to find out how to work with lib.
+Look at [examples](https://github.com/igor-pavlenko/httpsignatures-go/tree/master/examples) & tests to find out how to work with lib.
 
 ## Todo
 - [ ] Gin plugin
-- [ ] AwsSecretsManagerStorage
+- [x] AwsSecretsManagerStorage
