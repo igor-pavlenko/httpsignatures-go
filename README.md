@@ -222,6 +222,9 @@ func main() {
 }
 ```
 
+### AWS Secrets Manager Storage
+Find it in repo: [https://github.com/igor-pavlenko/aws-httpsignatures-go](https://github.com/igor-pavlenko/aws-httpsignatures-go)
+
 ### Custom Digest hash algorithm
 You can set your custom signature hash algorithm by implementing the `DigestHashAlgorithm` interface.
 ```go
@@ -405,4 +408,4 @@ Look at [examples](https://github.com/igor-pavlenko/httpsignatures-go/tree/maste
 
 ## Todo
 - [ ] Gin plugin
-- [x] AwsSecretsManagerStorage
+- [x] [AwsSecretsManagerStorage plugin](https://github.com/igor-pavlenko/aws-httpsignatures-go)
