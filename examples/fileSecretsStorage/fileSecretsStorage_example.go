@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/igor-pavlenko/httpsignatures.go"
+	"github.com/igor-pavlenko/httpsignatures-go"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -15,7 +15,7 @@ import (
 
 const alg = "RSA-SHA512"
 
-// FileSecretsStorage local static secrets storage
+// FileSecretsStorage local files secrets storage
 type FileSecretsStorage struct {
 	dir     string
 	storage map[string]httpsignatures.Secret
@@ -76,7 +76,7 @@ func (s FileSecretsStorage) fileExists(f string) bool {
 	return !i.IsDir()
 }
 
-// NewFileSecretsStorage create new digest
+// NewFileSecretsStorage create new storage
 func NewFileSecretsStorage(dir string) httpsignatures.Secrets {
 	if len(dir) == 0 {
 		return nil
