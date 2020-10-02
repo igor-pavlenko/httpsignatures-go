@@ -482,4 +482,4 @@ Look at [examples](https://github.com/igor-pavlenko/httpsignatures-go/tree/maste
 
 ## Todo
 - [ ] Gin plugin
-- [x] [AwsSecretsManagerStorage plugin](https://github.com/igor-pavlenko/aws-httpsignatures-go)
+- [x] [AwsSecretsManagerStorage plugin](https://github.com/igor-pavlenko/httpsignatures-go/tree/master/aws)
