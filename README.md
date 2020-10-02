@@ -223,7 +223,81 @@ func main() {
 ```
 
 ### AWS Secrets Manager Storage
-Find it in repo: [https://github.com/igor-pavlenko/aws-httpsignatures-go](https://github.com/igor-pavlenko/aws-httpsignatures-go)
+It's good practice to store private/public keys in secrets storage like AWS Secrets Manager, Vault by HashiCorp, or any other service. So you need to get keys by request.
+
+Some use cases, service used to:
+* validate incoming requests from other services (it needs only public keys)
+* sign self outgoing requests (signed by itself. So it needs only self private key)
+* sign outgoing requests on behalf of other services (it needs all private keys of served services)
+* validate other service requests & sign self requests (it needs access to self private keys & only public keys of served services)
+
+#### How to store keys in Secrets Manager
+Keys should be stored as binary. Name pattern: "/<ENV>/<Service KeyID>/<PrivateKey|PublicKey|Algorithm>".
+Where <ENV> — environment (for example: prod, dev, sandbox, staging etc), <Service KeyID> — service identifier used
+as KeyID in requests, <PrivateKey|PublicKey|Algorithm> — key type, can be only PrivateKey, PublicKey, Algorithm.
+```
+aws secretsmanager create-secret --name "/dev/myServiceID/PrivateKey" \
+    --description "Private Key for service with keyID = myServiceID" \
+    --secret-binary file://private.key
+
+aws secretsmanager create-secret --name "/dev/myServiceID/PublicKey" \
+    --description "Public Key for service with keyID = myServiceID" \
+    --secret-binary file://public.pub
+
+# In case services use different signature algorithms, store it also in Secrets Manager
+# If you have only one algorithm for all services, set it as a parameter (see below).
+aws secretsmanager create-secret --name "/dev/myServiceID/Algorithm" \
+    --description "Algorithm for service with keyID = myServiceID" \
+    --secret-binary file://algorithm.txt
+```
+
+If you have only one algorithm for all services, set it as a parameter and do not store the algorithm name in Secrets Manager:
+```go
+//...
+sm := NewAwsSecretsManagerStorage("prod", secretsManager)
+sm.SetAlgorithm("RSA-SHA512")
+//...
+```
+
+#### Validate incoming requests
+To validate incoming requests you need only PublicKey. PrivateKey & Algorithm can be omitted:
+```go
+//...
+sm := NewAwsSecretsManagerStorage("prod", secretsManager)
+// Omit Algorithm 
+sm.SetAlgorithm("RSA-SHA512")
+// To skip private keys for all services, you have to define not empty map with "*" KeyID and set it to false
+sm.SetRequiredPrivateKeys(map[string]bool{"*": false})
+//...
+```
+
+#### Sign self outgoing requests or sign outgoing requests on behalf of other services
+To sign outgoing requests you need only PrivateKey. PublicKey & Algorithm can be omitted:
+```go
+//...
+sm := NewAwsSecretsManagerStorage("prod", secretsManager)
+// Omit Algorithm 
+sm.SetAlgorithm("RSA-SHA512")
+// To skip public keys for all services, you have to define not empty map with "*" KeyID and set it to false
+sm.SetRequiredPublicKeys(map[string]bool{"*": false})
+//...
+```
+
+#### Validate other service requests & sign self requests
+To sign self outgoing requests you need only PrivateKey. PublicKey & Algorithm can be omitted.
+To validate other services incoming requests you need only PublicKeys, PrivateKeys & Algorithms can be omitted:
+```go
+//...
+sm := NewAwsSecretsManagerStorage("prod", secretsManager)
+// Omit Algorithm 
+sm.SetAlgorithm("RSA-SHA512")
+// Set required PrivateKey only for service with keyID = MyselfKeyID (current service).
+// You don't need PrivateKeys to validate incoming requests (and you don't have permissions to get PrivateKeys)
+sm.SetRequiredPrivateKeys(map[string]bool{"MyselfKeyID": true})
+// You don't need self PublicKey, but PublicKeys of other services are required.
+sm.SetRequiredPublicKeys(map[string]bool{"MyselfKeyID": false})
+//...
+```
 
 ### Custom Digest hash algorithm
 You can set your custom signature hash algorithm by implementing the `DigestHashAlgorithm` interface.
