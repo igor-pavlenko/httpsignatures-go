@@ -507,8 +507,8 @@ func TestHSBuildSignatureString(t *testing.T) {
 			name: "Valid signature string",
 			args: args{
 				ph: Headers{
-					algorithm: "md5",
-					headers: []string{
+					Algorithm: "md5",
+					Headers: []string{
 						"(request-target)",
 						"(created)",
 						"(expires)",
@@ -517,8 +517,8 @@ func TestHSBuildSignatureString(t *testing.T) {
 						"digest",
 						"content-length",
 					},
-					created: time.Unix(1402170695, 0),
-					expires: time.Unix(1402170995, 0),
+					Created: time.Unix(1402170695, 0),
+					Expires: time.Unix(1402170995, 0),
 				},
 				r: (func() *http.Request {
 					r, _ := http.NewRequest(http.MethodPost, testHostExamplePath, strings.NewReader(testBodyExample))
@@ -544,11 +544,11 @@ func TestHSBuildSignatureString(t *testing.T) {
 			name: "Has created header with 0 value",
 			args: args{
 				ph: Headers{
-					algorithm: "md5",
-					headers: []string{
+					Algorithm: "md5",
+					Headers: []string{
 						"(created)",
 					},
-					created: time.Unix(0, 0),
+					Created: time.Unix(0, 0),
 				},
 				r: (func() *http.Request {
 					r, _ := http.NewRequest(http.MethodPost, testHostExamplePath, strings.NewReader(testBodyExample))
@@ -563,11 +563,11 @@ func TestHSBuildSignatureString(t *testing.T) {
 			name: "Has expires header with 0 value",
 			args: args{
 				ph: Headers{
-					algorithm: "sha-256",
-					headers: []string{
+					Algorithm: "sha-256",
+					Headers: []string{
 						"(expires)",
 					},
-					expires: time.Unix(0, 0),
+					Expires: time.Unix(0, 0),
 				},
 				r: (func() *http.Request {
 					r, _ := http.NewRequest(http.MethodPost, testHostExamplePath, strings.NewReader(testBodyExample))
@@ -582,8 +582,8 @@ func TestHSBuildSignatureString(t *testing.T) {
 			name: "Header with 0 length",
 			args: args{
 				ph: Headers{
-					algorithm: "md5",
-					headers: []string{
+					Algorithm: "md5",
+					Headers: []string{
 						"host",
 						"digest",
 					},
@@ -605,8 +605,8 @@ func TestHSBuildSignatureString(t *testing.T) {
 			name: "Header not found",
 			args: args{
 				ph: Headers{
-					algorithm: "md5",
-					headers: []string{
+					Algorithm: "md5",
+					Headers: []string{
 						"host",
 						"digest",
 					},
@@ -751,24 +751,24 @@ func TestHSBuildSignatureHeader(t *testing.T) {
 		{
 			name: "Signature string OK",
 			arg: Headers{
-				keyID:     "key1",
-				algorithm: "alg",
-				created:   time.Unix(1591130723, 0),
-				expires:   time.Unix(1591130723, 0),
-				headers:   []string{"digest", "host"},
-				signature: "signature",
+				KeyID:     "key1",
+				Algorithm: "alg",
+				Created:   time.Unix(1591130723, 0),
+				Expires:   time.Unix(1591130723, 0),
+				Headers:   []string{"digest", "host"},
+				Signature: "signature",
 			},
 			want: `keyId="key1",algorithm="alg",headers="digest host",signature="signature"`,
 		},
 		{
 			name: "Signature string with created & expires OK",
 			arg: Headers{
-				keyID:     "key2",
-				algorithm: "alg",
-				created:   time.Unix(1591130723, 0),
-				expires:   time.Unix(1591130723, 0),
-				headers:   []string{"(created)", "(expires)"},
-				signature: "signature",
+				KeyID:     "key2",
+				Algorithm: "alg",
+				Created:   time.Unix(1591130723, 0),
+				Expires:   time.Unix(1591130723, 0),
+				Headers:   []string{"(created)", "(expires)"},
+				Signature: "signature",
 			},
 			want: `keyId="key2",algorithm="alg",created=1591130723,expires=1591130723,headers="(created) (expires)",` +
 				`signature="signature"`,

@@ -13,12 +13,12 @@ const testValidSignatureHeader = `keyId="Test",algorithm="rsa-sha256",created=14
 	`xpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE="`
 
 var testValidParsedSignatureHeader = Headers{
-	keyID:     "Test",
-	algorithm: "rsa-sha256",
-	created:   time.Unix(1402170695, 0),
-	expires:   time.Unix(1402170699, 0),
-	headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "digest", "content-length"},
-	signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01" +
+	KeyID:     "Test",
+	Algorithm: "rsa-sha256",
+	Created:   time.Unix(1402170695, 0),
+	Expires:   time.Unix(1402170699, 0),
+	Headers:   []string{"(request-target)", "(created)", "(expires)", "host", "date", "digest", "content-length"},
+	Signature: "vSdrb+dS3EceC9bcwHSo4MlyKS59iFIrhgYkz8+oVLEEzmYZZvRs8rgOp+63LEM3v+MFHB32NfpB2bEKBIvB1q52LaEUHFv120V01" +
 		"IL+TAD48XaERZFukWgHoBTLMhYS2Gb51gWxpeIq8knRmPnYePbF5MOkR0Zkly4zKH7s1dE=",
 }
 
@@ -78,7 +78,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `keyId="v1"`,
 			},
 			want: Headers{
-				keyID: "v1",
+				KeyID: "v1",
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -89,7 +89,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `algorithm="v2"`,
 			},
 			want: Headers{
-				algorithm: "v2",
+				Algorithm: "v2",
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -100,7 +100,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `headers="(request-target) (created)" `,
 			},
 			want: Headers{
-				headers: []string{"(request-target)", "(created)"},
+				Headers: []string{"(request-target)", "(created)"},
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -111,7 +111,7 @@ func TestParserParseSingleFields(t *testing.T) {
 				header: `signature="test" `,
 			},
 			want: Headers{
-				signature: "test",
+				Signature: "test",
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -123,12 +123,12 @@ func TestParserParseSingleFields(t *testing.T) {
 					`"v5"`,
 			},
 			want: Headers{
-				keyID:     "v1",
-				algorithm: "v2",
-				created:   time.Unix(1402170695, 0),
-				expires:   time.Unix(1402170699, 0),
-				headers:   []string{"v-3", "v-4"},
-				signature: "v5",
+				KeyID:     "v1",
+				Algorithm: "v2",
+				Created:   time.Unix(1402170695, 0),
+				Expires:   time.Unix(1402170699, 0),
+				Headers:   []string{"v-3", "v-4"},
+				Signature: "v5",
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -140,12 +140,12 @@ func TestParserParseSingleFields(t *testing.T) {
 					`v-3 v-4  ", signature="v5"   `,
 			},
 			want: Headers{
-				keyID:     "v1",
-				algorithm: "v2",
-				created:   time.Unix(1402170695, 0),
-				expires:   time.Unix(1402170699, 0),
-				headers:   []string{"v-3", "v-4"},
-				signature: "v5",
+				KeyID:     "v1",
+				Algorithm: "v2",
+				Created:   time.Unix(1402170695, 0),
+				Expires:   time.Unix(1402170699, 0),
+				Headers:   []string{"v-3", "v-4"},
+				Signature: "v5",
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -157,12 +157,12 @@ func TestParserParseSingleFields(t *testing.T) {
 					`"s1"`,
 			},
 			want: Headers{
-				keyID:     "k1",
-				algorithm: "a1",
-				created:   time.Unix(1592157709, 0),
-				expires:   time.Unix(1592157709, 0),
-				headers:   []string{"h1", "h2"},
-				signature: "s1",
+				KeyID:     "k1",
+				Algorithm: "a1",
+				Created:   time.Unix(1592157709, 0),
+				Expires:   time.Unix(1592157709, 0),
+				Headers:   []string{"h1", "h2"},
+				Signature: "s1",
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -285,7 +285,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 				header: `created=1402170695`,
 			},
 			want: Headers{
-				created: time.Unix(1402170695, 0),
+				Created: time.Unix(1402170695, 0),
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -296,7 +296,7 @@ func TestParserParseCreatedExpires(t *testing.T) {
 				header: `expires=1402170699`,
 			},
 			want: Headers{
-				expires: time.Unix(1402170699, 0),
+				Expires: time.Unix(1402170699, 0),
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -479,7 +479,7 @@ func TestParserParseAmbiguousParams(t *testing.T) {
 				header: `keyId="v1",ambiguous="v2",digest="v3"`,
 			},
 			want: Headers{
-				keyID: "v1",
+				KeyID: "v1",
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
@@ -587,7 +587,7 @@ func TestNotSpecifiedHeadersParams(t *testing.T) {
 				header: `keyId="v1"`,
 			},
 			want: Headers{
-				keyID: "v1",
+				KeyID: "v1",
 			},
 			wantErrType: testErrParserType,
 			wantErrMsg:  "",
