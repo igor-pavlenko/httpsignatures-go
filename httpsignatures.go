@@ -133,46 +133,46 @@ func (hs *HTTPSignatures) Verify(r *http.Request) error {
 	}
 
 	// Verify expires (must be lower than now() +/- time gap)
-	if hs.inHeaders(expires, sh.headers) {
+	if hs.inHeaders(expires, sh.Headers) {
 		now := time.Now()
-		max := sh.expires.Add(hs.defaultTimeGap)
+		max := sh.Expires.Add(hs.defaultTimeGap)
 		if now.After(max) {
 			return &ErrHS{"signature expired", nil}
 		}
 	}
 
 	// Verify created (can not be in future)
-	if hs.inHeaders(created, sh.headers) {
+	if hs.inHeaders(created, sh.Headers) {
 		now := time.Now()
 		max := now.Add(hs.defaultTimeGap)
-		if sh.created.After(max) {
+		if sh.Created.After(max) {
 			return &ErrHS{"signature in future", nil}
 		}
 	}
 
 	// Verify digest
 	if hs.defaultVerifyDigest {
-		err := hs.verifyDigest(sh.headers, r)
+		err := hs.verifyDigest(sh.Headers, r)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Check keyID & algorithm
-	secret, err := hs.ss.Get(sh.keyID)
+	secret, err := hs.ss.Get(sh.KeyID)
 	if err != nil {
-		return &ErrHS{fmt.Sprintf("keyID '%s' not found", sh.keyID), err}
+		return &ErrHS{fmt.Sprintf("keyID '%s' not found", sh.KeyID), err}
 	}
-	if !strings.EqualFold(secret.Algorithm, sh.algorithm) {
+	if !strings.EqualFold(secret.Algorithm, sh.Algorithm) {
 		return &ErrHS{
-			fmt.Sprintf("wrong algorithm '%s' for keyId '%s'", sh.algorithm, sh.keyID),
+			fmt.Sprintf("wrong algorithm '%s' for keyId '%s'", sh.Algorithm, sh.KeyID),
 			nil,
 		}
 	}
 	alg, ok := hs.alg[strings.ToUpper(secret.Algorithm)]
 	if !ok {
 		return &ErrHS{
-			fmt.Sprintf("algorithm '%s' not supported", sh.algorithm),
+			fmt.Sprintf("algorithm '%s' not supported", sh.Algorithm),
 			nil,
 		}
 	}
@@ -187,7 +187,7 @@ func (hs *HTTPSignatures) Verify(r *http.Request) error {
 	}
 
 	// Verify signature
-	signatureDecoded, err := base64.StdEncoding.DecodeString(sh.signature)
+	signatureDecoded, err := base64.StdEncoding.DecodeString(sh.Signature)
 	if err != nil {
 		return &ErrHS{
 			"error decode signature from base64",
@@ -221,21 +221,21 @@ func (hs *HTTPSignatures) Sign(secretKeyID string, r *http.Request) error {
 
 	// Build signature string
 	headers := Headers{
-		keyID:     secret.KeyID,
-		algorithm: secret.Algorithm,
-		created:   time.Now(),
-		expires:   time.Time{},
-		headers:   hs.defaultHeaders,
+		KeyID:     secret.KeyID,
+		Algorithm: secret.Algorithm,
+		Created:   time.Now(),
+		Expires:   time.Time{},
+		Headers:   hs.defaultHeaders,
 	}
 	// Expires
 	if hs.defaultExpiresSec != 0 {
-		headers.expires = time.Now().Add(time.Second * time.Duration(hs.defaultExpiresSec))
+		headers.Expires = time.Now().Add(time.Second * time.Duration(hs.defaultExpiresSec))
 	}
 	// Create digest & set it to request header
 	// Proceed only if digest header not set
 	digest := r.Header.Get(digestHeader)
 	if len(digest) == 0 {
-		d, err := hs.createDigest(headers.headers, r)
+		d, err := hs.createDigest(headers.Headers, r)
 		if err != nil {
 			return err
 		}
@@ -252,7 +252,7 @@ func (hs *HTTPSignatures) Sign(secretKeyID string, r *http.Request) error {
 	if err != nil {
 		return &ErrHS{"error creating signature", err}
 	}
-	headers.signature = base64.StdEncoding.EncodeToString(s)
+	headers.Signature = base64.StdEncoding.EncodeToString(s)
 
 	// Build Signature header
 	sigHeader := hs.buildSignatureHeader(headers)
@@ -262,29 +262,29 @@ func (hs *HTTPSignatures) Sign(secretKeyID string, r *http.Request) error {
 }
 
 func (hs *HTTPSignatures) buildSignatureString(sh Headers, r *http.Request) ([]byte, error) {
-	j := len(sh.headers)
+	j := len(sh.Headers)
 	headers := r.Header.Clone()
 	var b bytes.Buffer
-	for i, h := range sh.headers {
+	for i, h := range sh.Headers {
 		switch h {
 		case requestTarget:
 			b.WriteString(fmt.Sprintf("%s: %s %s", requestTarget, strings.ToLower(r.Method), r.URL.RequestURI()))
 		case created:
-			if sh.created == time.Unix(0, 0) {
+			if sh.Created == time.Unix(0, 0) {
 				return nil, &ErrHS{
 					fmt.Sprintf("param '%s', required in signature, not found", created),
 					nil,
 				}
 			}
-			b.WriteString(fmt.Sprintf("%s: %d", created, sh.created.Unix()))
+			b.WriteString(fmt.Sprintf("%s: %d", created, sh.Created.Unix()))
 		case expires:
-			if sh.expires == time.Unix(0, 0) {
+			if sh.Expires == time.Unix(0, 0) {
 				return nil, &ErrHS{
 					fmt.Sprintf("param '%s', required in signature, not found", expires),
 					nil,
 				}
 			}
-			b.WriteString(fmt.Sprintf("%s: %d", expires, sh.expires.Unix()))
+			b.WriteString(fmt.Sprintf("%s: %d", expires, sh.Expires.Unix()))
 		default:
 			reqHeader, ok := headers[textproto.CanonicalMIMEHeaderKey(h)]
 			if !ok {
@@ -304,18 +304,18 @@ func (hs *HTTPSignatures) buildSignatureString(sh Headers, r *http.Request) ([]b
 }
 
 func (hs *HTTPSignatures) buildSignatureHeader(h Headers) string {
-	header := fmt.Sprintf(`%s="%s",`, paramKeyID, h.keyID)
-	header += fmt.Sprintf(`%s="%s",`, paramAlgorithm, h.algorithm)
-	if hs.inHeaders(fmt.Sprintf("(%s)", paramCreated), h.headers) {
-		header += fmt.Sprintf(`%s=%d,`, paramCreated, h.created.Unix())
+	header := fmt.Sprintf(`%s="%s",`, paramKeyID, h.KeyID)
+	header += fmt.Sprintf(`%s="%s",`, paramAlgorithm, h.Algorithm)
+	if hs.inHeaders(fmt.Sprintf("(%s)", paramCreated), h.Headers) {
+		header += fmt.Sprintf(`%s=%d,`, paramCreated, h.Created.Unix())
 	}
-	if hs.inHeaders(fmt.Sprintf("(%s)", paramExpires), h.headers) && hs.defaultExpiresSec > 0 {
-		header += fmt.Sprintf(`%s=%d,`, paramExpires, h.expires.Unix())
+	if hs.inHeaders(fmt.Sprintf("(%s)", paramExpires), h.Headers) && hs.defaultExpiresSec > 0 {
+		header += fmt.Sprintf(`%s=%d,`, paramExpires, h.Expires.Unix())
 	}
-	if len(h.headers) > 0 {
-		header += fmt.Sprintf(`%s="%s",`, paramHeaders, strings.Join(h.headers, " "))
+	if len(h.Headers) > 0 {
+		header += fmt.Sprintf(`%s="%s",`, paramHeaders, strings.Join(h.Headers, " "))
 	}
-	header += fmt.Sprintf(`%s="%s"`, paramSignature, h.signature)
+	header += fmt.Sprintf(`%s="%s"`, paramSignature, h.Signature)
 
 	return header
 }
