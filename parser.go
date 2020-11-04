@@ -34,12 +34,12 @@ const (
 
 // Headers Signature headers & params
 type Headers struct {
-	keyID     string    // REQUIRED
-	algorithm string    // RECOMMENDED
-	created   time.Time // RECOMMENDED
-	expires   time.Time // OPTIONAL (Not implemented: "Subsecond precision is allowed using decimal notation.")
-	headers   []string  // OPTIONAL
-	signature string    // REQUIRED
+	KeyID     string    // REQUIRED
+	Algorithm string    // RECOMMENDED
+	Created   time.Time // RECOMMENDED
+	Expires   time.Time // OPTIONAL (Not implemented: "Subsecond precision is allowed using decimal notation.")
+	Headers   []string  // OPTIONAL
+	Signature string    // REQUIRED
 }
 
 // DigestHeader Digest header parsed into params (alg & digest)
@@ -355,21 +355,21 @@ func (p *Parser) setKeyValue() *ErrParser {
 	p.params[k] = true
 
 	if k == "keyId" {
-		p.headers.keyID = string(p.value)
+		p.headers.KeyID = string(p.value)
 	} else if k == "algorithm" {
-		p.headers.algorithm = string(p.value)
+		p.headers.Algorithm = string(p.value)
 	} else if k == "headers" {
-		p.headers.headers = strings.Fields(string(p.value))
+		p.headers.Headers = strings.Fields(string(p.value))
 	} else if k == "signature" {
-		p.headers.signature = string(p.value)
+		p.headers.Signature = string(p.value)
 	} else if k == "created" {
 		var err error
-		if p.headers.created, err = p.intToTime(p.value); err != nil {
+		if p.headers.Created, err = p.intToTime(p.value); err != nil {
 			return &ErrParser{"wrong 'created' param value", err}
 		}
 	} else if k == "expires" {
 		var err error
-		if p.headers.expires, err = p.intToTime(p.value); err != nil {
+		if p.headers.Expires, err = p.intToTime(p.value); err != nil {
 			return &ErrParser{"wrong 'expires' param value", err}
 		}
 	}
@@ -410,14 +410,14 @@ func (p *Parser) setDigest() *ErrParser {
 
 // VerifySignatureFields verify required fields
 func (p *Parser) VerifySignatureFields() *ErrParser {
-	if p.headers.keyID == "" {
+	if p.headers.KeyID == "" {
 		return &ErrParser{
 			"keyId is not set in header",
 			nil,
 		}
 	}
 
-	if p.headers.signature == "" {
+	if p.headers.Signature == "" {
 		return &ErrParser{
 			"signature is not set in header",
 			nil,
