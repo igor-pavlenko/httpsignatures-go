@@ -32,7 +32,7 @@ To install the module:
 
 To install a specific version, use:
 
-`go get github.com/igor-pavlenko/httpsignatures-go@v0.0.14`
+`go get github.com/igor-pavlenko/httpsignatures-go@v0.0.23`
 
 Don't forget: `export GO111MODULE=on`
 
