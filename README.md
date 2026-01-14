@@ -1,3 +1,8 @@
+> [!WARNING]
+> **This repository is archived and no longer maintained.**
+> 
+
+
 # Sign/Verify signature with http-signatures golang lib
 
 [![Linter & Tests](https://github.com/igor-pavlenko/httpsignatures-go/workflows/linter%20&%20tests/badge.svg?branch=master)](https://github.com/igor-pavlenko/httpsignatures-go/actions)
